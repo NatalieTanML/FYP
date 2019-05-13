@@ -86,10 +86,10 @@ namespace FYP.Services
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("Js", "fypkidzania2019@gmail.com"));
             message.To.Add(new MailboxAddress("Js", "fypkidzania2019@gmail.com"));
-            message.Subject = "Hi";
+            message.Subject = "Registration successful";
             message.Body = new TextPart("plain")
             {
-                Text = "Hi1"
+                Text = "Please change your password"
             };
 
             using (var client = new MailKit.Net.Smtp.SmtpClient())
