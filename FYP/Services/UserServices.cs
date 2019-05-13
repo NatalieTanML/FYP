@@ -3,6 +3,7 @@ using FYP.Helpers;
 using FYP.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using MimeKit;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -78,9 +79,41 @@ namespace FYP.Services
             user.PasswordSalt = passwordSalt;
 
             // Add to database
-            await _context.Users.AddAsync(user);
+            _context.Users.Add(user);
             await _context.SaveChangesAsync();
-           
+            
+            //Generate email to user
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("Js", "fypkidzania2019@gmail.com"));
+            message.To.Add(new MailboxAddress("Js", "fypkidzania2019@gmail.com"));
+            message.Subject = "Hi";
+            message.Body = new TextPart("plain")
+            {
+                Text = "Hi1"
+            };
+
+            using (var client = new MailKit.Net.Smtp.SmtpClient())
+            {
+
+                //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
+                //client.AuthenticationMechanisms.Remove("XOAUTH2");
+                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+
+                //Google
+                client.Connect("smtp.gmail.com", 587, false);
+                client.Authenticate("fypkidzania2019@gmail.com", "P@ssw0rdFYP");
+
+                // Start of provider specific settings
+                //Yhoo
+                // client.Connect("smtp.mail.yahoo.com", 587, false);
+                // client.Authenticate("yahoo", "password");
+
+                // End of provider specific settings
+                client.Send(message);
+                client.Disconnect(true);
+                client.Dispose();
+            }
+
             // returns user once done
             return user;
         }
