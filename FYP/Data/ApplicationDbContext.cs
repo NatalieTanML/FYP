@@ -16,6 +16,7 @@ namespace FYP.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
+        public DbSet<Product> Products { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -30,8 +31,22 @@ namespace FYP.Data
                 .HasForeignKey(input => input.RoleId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
-            
+
+            modelBuilder.Entity<Product>()
+                .HasOne(input => input.Category)
+                .WithMany()
+                .HasForeignKey(input => input.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            modelBuilder.Entity<Product>()
+                .HasOne(input => input.User)
+                .WithMany()
+                .HasForeignKey(input => input.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasForeignKey(input => input.UpdatedBy)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
         }
-        
     }
 }

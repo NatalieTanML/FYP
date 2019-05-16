@@ -14,7 +14,7 @@ namespace FYP.Models
         public bool IsEnabled { get; set; }
         public bool ChangePassword { get; set; }
         public DateTime CreatedAt { get; set; }
-        public int CreatedBy { get; set; }
+        public int? CreatedBy { get; set; }
 
         public int RoleId { get; set; }
         public Role Role { get; set; }
