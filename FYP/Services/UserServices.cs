@@ -13,6 +13,8 @@ using MailKit;
 using Org.BouncyCastle.Crypto.Tls;
 using MailKit.Net.Smtp;
 using System.Diagnostics;
+using Microsoft.Extensions.Configuration;
+using System.IO;
 
 namespace FYP.Services
 {
@@ -82,11 +84,17 @@ namespace FYP.Services
             const string LOWERCASE_CHARACTERS = "abcdefghijklmnopqrstuvwxyz";
             const string UPPERCASE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             const string NUMERIC_CHARACTERS = "0123456789";
+            //Enable special characters and spaces here:
+            //const string SPECIAL_CHARACTERS = @"!#$%&*@\";
+            //const string SPACE_CHARACTER = " ";
             string characterSet = "";
-            characterSet += LOWERCASE_CHARACTERS+ UPPERCASE_CHARACTERS+ NUMERIC_CHARACTERS;
+            characterSet += LOWERCASE_CHARACTERS+ UPPERCASE_CHARACTERS+ NUMERIC_CHARACTERS; //+SPECIAL_CHARACTERS+SPACE_CHARACTER;
+
+            //Change random password length here:
             char[] passwordRandom = new char[10];
+
             int characterSetLength = characterSet.Length;
-            Random random = new System.Random();
+            Random random = new Random();
             for (int characterPosition = 0; characterPosition < passwordRandom.Length; characterPosition++)
             {
                 passwordRandom[characterPosition] = characterSet[random.Next(characterSetLength - 1)];
@@ -102,8 +110,6 @@ namespace FYP.Services
                 }
             }
             string password = string.Join(null, passwordRandom);
-            Debug.WriteLine("random pass   " +password);
-
 
             // Create password hash & salt
             byte[] passwordHash, passwordSalt;
@@ -118,10 +124,13 @@ namespace FYP.Services
 
 
             //Generate email to user
+            var builder = new ConfigurationBuilder().SetBasePath
+                (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
+            var configuration = builder.Build();
 
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("Admin@kidzania", "fypkidzania2019@gmail.com"));
-            message.To.Add(new MailboxAddress("Admin@kidzania", "fypkidzania2019@gmail.com"));
+            message.From.Add(new MailboxAddress("Admin@kidzania", configuration["Email:Account"]));
+            message.To.Add(new MailboxAddress("Admin@kidzania", configuration["Email:Receiver"]));
             message.Subject = "Administration account register successful";
             message.Body = new TextPart("plain")
             {
@@ -129,6 +138,8 @@ namespace FYP.Services
                 "Your password:"+ password + 
                 "\nPlease change your password"
             };
+
+            
 
             using (var client = new MailKit.Net.Smtp.SmtpClient())
             {
@@ -139,7 +150,7 @@ namespace FYP.Services
                 
                 //Google
                 client.Connect("smtp.gmail.com", 587, false);
-                client.Authenticate("fypkidzania2019@gmail.com", "P@ssw0rdFYP");
+                client.Authenticate(configuration["Email:Account"], configuration["Email:Password"]);
 
                 // Start of provider specific settings
                 //Yhoo
