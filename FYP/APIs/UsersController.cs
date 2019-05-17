@@ -51,7 +51,7 @@ namespace FYP.APIs
             try
             {
                 // save new user
-                User newUserWithId = await _userService.Create(newUser, inFormData["password"]);
+                User newUserWithId = await _userService.Create(newUser);//inFormData["password"]);
                 return Ok(new
                 {
                     newUserWithId.UserId,

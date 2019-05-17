@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using MailKit;
 using Org.BouncyCastle.Crypto.Tls;
 using MailKit.Net.Smtp;
+using System.Diagnostics;
 
 namespace FYP.Services
 {
@@ -20,7 +21,7 @@ namespace FYP.Services
         Task<IEnumerable<User>> GetAll();
         Task<User> GetById(int id);
         Task<User> Authenticate(string username, string password);
-        Task<User> Create(User user, string password);
+        Task<User> Create(User user); //string password);
         Task Update(User user, string password);
         Task Delete(int id);
     }
@@ -64,17 +65,45 @@ namespace FYP.Services
             return user;
         }
 
-        public async Task<User> Create(User user, string password)
+        public async Task<User> Create(User user)//string password)
         {
             // validation to check if the password is empty or spaces only.
-            if (string.IsNullOrWhiteSpace(password))
-                throw new AppException("Password is required");
+            //if (string.IsNullOrWhiteSpace(password))
+               // throw new AppException("Password is required");
 
             // If the user name (email) already exists, raise an exception
             // so that the Web API controller class code can capture the error and
             // send back a JSON response to the client side.
             if (await _context.Users.AnyAsync(u => u.Username == user.Username))
                 throw new AppException("Username " + user.Username + " is already taken");
+
+            //Generate random password for user
+            const int MAXIMUM_IDENTICAL_CONSECUTIVE_CHARS = 2;
+            const string LOWERCASE_CHARACTERS = "abcdefghijklmnopqrstuvwxyz";
+            const string UPPERCASE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const string NUMERIC_CHARACTERS = "0123456789";
+            string characterSet = "";
+            characterSet += LOWERCASE_CHARACTERS+ UPPERCASE_CHARACTERS+ NUMERIC_CHARACTERS;
+            char[] passwordRandom = new char[10];
+            int characterSetLength = characterSet.Length;
+            Random random = new System.Random();
+            for (int characterPosition = 0; characterPosition < passwordRandom.Length; characterPosition++)
+            {
+                passwordRandom[characterPosition] = characterSet[random.Next(characterSetLength - 1)];
+
+                bool moreThanTwoIdenticalInARow =
+                    characterPosition > MAXIMUM_IDENTICAL_CONSECUTIVE_CHARS
+                    && passwordRandom[characterPosition] == passwordRandom[characterPosition - 1]
+                    && passwordRandom[characterPosition - 1] == passwordRandom[characterPosition - 2];
+
+                if (moreThanTwoIdenticalInARow)
+                {
+                    characterPosition--;
+                }
+            }
+            string password = string.Join(null, passwordRandom);
+            Debug.WriteLine("random pass   " +password);
+
 
             // Create password hash & salt
             byte[] passwordHash, passwordSalt;
@@ -91,12 +120,14 @@ namespace FYP.Services
             //Generate email to user
 
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("Js", "fypkidzania2019@gmail.com"));
-            message.To.Add(new MailboxAddress("Js", "fypkidzania2019@gmail.com"));
-            message.Subject = "Hi";
+            message.From.Add(new MailboxAddress("Admin@kidzania", "fypkidzania2019@gmail.com"));
+            message.To.Add(new MailboxAddress("Admin@kidzania", "fypkidzania2019@gmail.com"));
+            message.Subject = "Administration account register successful";
             message.Body = new TextPart("plain")
             {
-                Text = "Hi1"
+                Text = "Hi " + user.Username +",\n" + 
+                "Your password:"+ password + 
+                "\nPlease change your password"
             };
 
             using (var client = new MailKit.Net.Smtp.SmtpClient())
