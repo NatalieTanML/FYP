@@ -51,7 +51,7 @@ namespace FYP.APIs
             try
             {
                 // save new user
-                User newUserWithId = await _userService.Create(newUser);
+                User newUserWithId = await _userService.Create(newUser);//inFormData["password"]);
                 return Ok(new
                 {
                     newUserWithId.UserId,
@@ -107,8 +107,8 @@ namespace FYP.APIs
             });
         }
 
-        [HttpGet("getall")]
-        public async Task<IActionResult> GetAll()
+        [HttpGet]
+        public async Task<IActionResult> GetAllUsers()
         {
             var users = await _userService.GetAll();
             List<object> userList = new List<object>();
@@ -116,18 +116,17 @@ namespace FYP.APIs
             {
                 userList.Add(new
                 {
-                    id = user.UserId,
-                    role = user.Role.RoleName,
-                    username = user.Username,
-                    createdat = user.CreatedAt,
-                    createdby = user.CreatedBy,
-
+                    userId = user.UserId,
+                    roleName = user.Role.RoleName,
+                    email = user.Username,
+                    isEnabled = user.IsEnabled,
+                    changePassword = user.ChangePassword
                 });
             }
             return new JsonResult(userList);
         }
 
-        [HttpGet("getuserbyid/{id}")]
+        [HttpGet("{id}")]
         public async Task<IActionResult> GetUserById(int id)
         {
             var user = await _userService.GetById(id);
@@ -153,16 +152,15 @@ namespace FYP.APIs
             });
         }
 
-        [HttpPut("Update/{id}")]
-        //[Consumes("application/x-www-form-urlencoded")]
-        public async Task<IActionResult> Update(int id, IFormCollection inFormData)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateUser(int id, IFormCollection inFormData)
         {
-            
-
             User user = new User()
             {
+                ChangePassword = true,
                 UserId = id,
-           
+                Username = inFormData["username"]
+                // update with disabled/not disabled
             };
             string password = inFormData["password"];
             try
@@ -179,7 +177,7 @@ namespace FYP.APIs
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> DeleteUser(int id)
         {
             await _userService.Delete(id);
             return Ok(new { message = "User deleted successfully." });
