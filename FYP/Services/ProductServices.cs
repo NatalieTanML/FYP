@@ -1,8 +1,11 @@
-﻿using FYP.Data;
+﻿using BraintreeHttp;
+using FYP.Data;
 using FYP.Helpers;
 using FYP.Models;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using PayPalCheckoutSdk.Orders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,7 +70,6 @@ namespace FYP.Services
 
             // update product properties
             product.ProductName = productParam.ProductName;
-            product.CurrentQuantity = productParam.CurrentQuantity;
             product.Description = productParam.Description;
             product.Price = productParam.Price;
             product.UpdatedAt = DateTime.Now;
@@ -103,7 +105,7 @@ namespace FYP.Services
             //3. Call PayPal to get the transaction
             var response = await PayPalClient.client().Execute(request);
             //4. Save the transaction in your database. Implement logic to save transaction to your database for future reference.
-            var result = response.Result<Order>();
+            var result = response.Result<PayPalCheckoutSdk.Orders.Order>();
             Console.WriteLine("Retrieved Order Status");
             Console.WriteLine("Status: {0}", result.Status);
             Console.WriteLine("Order Id: {0}", result.Id);

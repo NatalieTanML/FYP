@@ -44,8 +44,6 @@ namespace FYP.APIs
                     price = product.Price,
                     categoryName = product.Category.CategoryName,
                     description = product.Description,
-                    currentQuantity = product.CurrentQuantity,
-                    minimumQuantity = product.MinimumQuantity,
                     updatedBy = product.UpdatedBy
                 });
             }
@@ -163,4 +161,3 @@ namespace FYP.APIs
         }
     }
 }
-    }
