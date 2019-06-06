@@ -1,8 +1,11 @@
-﻿using FYP.Data;
+﻿using BraintreeHttp;
+using FYP.Data;
 using FYP.Helpers;
 using FYP.Models;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using PayPalCheckoutSdk.Orders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -73,7 +76,6 @@ namespace FYP.Services
 
             // update product properties
             product.ProductName = productParam.ProductName;
-            product.CurrentQuantity = productParam.CurrentQuantity;
             product.Description = productParam.Description;
             product.Price = productParam.Price;
             product.UpdatedAt = DateTime.Now;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -16,19 +17,30 @@ namespace FYP.Models
         public string Request { get; set; }
         public byte[] Email { get; set; }
 
-        public int UpdatedBy { get; set; }
-        public User User { get; set; }
-        public string Username { get; set; }
+        [ForeignKey("UpdatedBy")]
+        public int? UpdatedById { get; set; }
+        public User UpdatedBy { get; set; }
 
+        [ForeignKey("DeliveryType")]
         public int DeliveryTypeId { get; set; }
         public DeliveryType DeliveryType { get; set; }
-        public string DeliveryTypeName { get; set; }
 
-        public int AddressId { get; set; }
+        [ForeignKey("Address")]
+        public int? AddressId { get; set; }
         public Address Address { get; set; }
 
+        [ForeignKey("Status")]
         public int StatusId { get; set; }
         public Status Status { get; set; }
-        public string StatusName { get; set; }
+        
+        [ForeignKey("DeliveryMan")]
+        public int? DeliveryManId { get; set; }
+        public User DeliveryMan { get; set; }
+
+        [ForeignKey("OrderRecipient")]
+        public int? OrderRecipientId { get; set; }
+        public OrderRecipient OrderRecipient { get; set; }
+
+        public List<OrderItem> OrderItems { get; set; }
     }
 }
