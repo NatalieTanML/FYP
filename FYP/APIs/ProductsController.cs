@@ -161,6 +161,91 @@ namespace FYP.APIs
             var order = await _productService.GetPayPalOrder(orderId);
             return new JsonResult(order);
         }
+
+        [AllowAnonymous]
+        [HttpPost("sanitizeUserCart")]
+        public async Task<IActionResult> sanitizeUserCart([FromBody] string productList)
+        {
+
+            // 1. do a for loop to retrieve out all the productId
+            // Qn 
+            // 2. package it into an array
+            // 3. Send the array
+            // research how to send back json? that will be easier
+
+        
+
+            List<int> productIdList = new List<int>();
+            //var hi = inFormData["productId"];
+
+            // Looping through all the keys in the IFormCollection
+            //foreach (var key in inFormData.Keys)
+            //{
+            //    if(key.Equals("productId[]"))
+            //    {
+            //        var productId = inFormData["productId[]"].Split(',');
+            //        //productIdList.Add(int.Parse(productId));
+            //    }
+
+            //}
+
+                //foreach (string description in inFormData.Keys)
+                //{
+                //    if (description.Equals("productId[]"))
+                //    {
+                //        var v = inFormData[description];
+                //        foreach(var stringItem in v)
+                //        {
+                //            productIdList.Add(int.Parse(stringItem));
+                //        }
+                //        //var stringItems = v.Split(',');
+                //        //foreach (var stringItem in stringItems)
+                //        //{
+                //        //    //do something with stringItem
+                //        //}
+                //    }
+                //}
+
+                ////productIdList.Add(Array.ConvertAll((inFormData["productId[]"], int.Parse));
+
+                //var product = await _productService.GetUserCart(productIdList);
+         
+            // Looping through all the keys in the IFormCollection
+            //foreach (var key in inFormData.Keys)
+            //{
+            //    productIdList.Add(key["productId[]"]);
+            //}
+
+            //for (int i = 0; i < 5; i++)
+            //{
+
+            //}
+
+     
+
+                  // returns full list of products including join with category table
+           // return await _context.Products.Include(product => product.Category).ToListAsync();
+            //var products = await _productService.GetAll();
+            //List<object> productList = new List<object>();
+            //foreach (Product product in products)
+            //{
+            //    productList.Add(new
+            //    {
+            //        productId = product.ProductId,
+            //        productName = product.ProductName,
+            //        price = product.Price,
+            //        categoryName = product.Category.CategoryName,
+            //        description = product.Description,
+            //        currentQuantity = product.CurrentQuantity,
+            //        minimumQuantity = product.MinimumQuantity,
+            //        updatedBy = product.UpdatedBy
+            //    });
+            //}
+            //return new JsonResult(productList);
+
+
+            return Ok();
+        }
     }
 }
-    }
+    
