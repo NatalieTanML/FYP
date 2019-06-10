@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using FYP.Helpers;
@@ -42,9 +43,40 @@ namespace FYP.APIs
                     productId = product.ProductId,
                     productName = product.ProductName,
                     price = product.Price,
-                    categoryName = product.Category.CategoryName,
                     description = product.Description,
-                    updatedBy = product.UpdatedBy
+                    imageWidth = product.ImageWidth,
+                    imageHeight = product.ImageHeight,
+                    effectiveStartDate = product.EffectiveStartDate,
+                    effectiveEndDate = product.EffectiveEndDate,
+                    updatedAt = product.UpdatedAt,
+                    updatedById = product.UpdatedById,
+                    categoryId = product.CategoryId,
+                    categoryName = product.Category.CategoryName,
+                    discountPrice = product.DiscountPrices
+                        .Select(i => new
+                        {
+                            i.DiscountPriceId,
+                            i.EffectiveStartDate,
+                            i.EffectiveEndDate,
+                            i.DiscountValue,
+                            i.IsPercentage
+                        }),
+                    productImages = product.ProductImages
+                        .Select(i => new
+                        {
+                            i.ProductImageId,
+                            i.ImageKey,
+                            i.ImageUrl
+                        }),
+                    options = product.Options
+                        .Select(i => new
+                        {
+                            i.OptionId,
+                            i.OptionType,
+                            i.OptionValue,
+                            i.CurrentQuantity,
+                            i.MinimumQuantity
+                        })
                 });
             }
             return new JsonResult(productList);
@@ -57,16 +89,46 @@ namespace FYP.APIs
             try
             {
                 var product = await _productService.GetById(id);
+
                 return Ok(new
                 {
                     productId = product.ProductId,
                     productName = product.ProductName,
                     price = product.Price,
-                    categoryName = product.Category.CategoryName,
                     description = product.Description,
-                    currentQuantity = product.CurrentQuantity,
-                    minimumQuantity = product.MinimumQuantity,
-                    updatedBy = product.UpdatedBy
+                    imageWidth = product.ImageWidth,
+                    imageHeight = product.ImageHeight,
+                    effectiveStartDate = product.EffectiveStartDate,
+                    effectiveEndDate = product.EffectiveEndDate,
+                    updatedAt = product.UpdatedAt,
+                    updatedById = product.UpdatedById,
+                    categoryId = product.CategoryId,
+                    categoryName = product.Category.CategoryName,
+                    discountPrice = product.DiscountPrices
+                        .Select(i => new
+                        {
+                            i.DiscountPriceId,
+                            i.EffectiveStartDate,
+                            i.EffectiveEndDate,
+                            i.DiscountValue,
+                            i.IsPercentage
+                        }),
+                    productImages = product.ProductImages
+                        .Select(i => new
+                        {
+                            i.ProductImageId,
+                            i.ImageKey,
+                            i.ImageUrl
+                        }),
+                    options = product.Options
+                        .Select(i => new
+                        {
+                            i.OptionId,
+                            i.OptionType,
+                            i.OptionValue,
+                            i.CurrentQuantity,
+                            i.MinimumQuantity
+                        })
                 });
             }
             catch (Exception ex)
@@ -77,7 +139,7 @@ namespace FYP.APIs
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateProduct([FromForm] IFormCollection inFormData)
+        public async Task<IActionResult> CreateProduct([FromBody] Product inProduct)
         {
             // get current logged in user's id
             //int currentUserId = int.Parse(User.FindFirst("userid").Value);
@@ -86,16 +148,23 @@ namespace FYP.APIs
             // create new product object to be added
             Product newProduct = new Product()
             {
-                ProductName = inFormData["productname"],
-                CurrentQuantity = int.Parse(inFormData["currentquantity"]),
-                MinimumQuantity = int.Parse(inFormData["minimumquantity"]),
-                Description = inFormData["description"],
-                Price = decimal.Parse(inFormData["price"]),
+                ProductName = inProduct.ProductName,
+                Description = inProduct.Description,
+                Price = decimal.Parse(inProduct.Price.ToString()),
+                ImageWidth = double.Parse(inProduct.ImageWidth.ToString()),
+                ImageHeight = double.Parse(inProduct.ImageHeight.ToString()),
+                EffectiveStartDate = DateTime.ParseExact(inProduct.EffectiveStartDate.ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                EffectiveEndDate = DateTime.ParseExact(inProduct.EffectiveEndDate.ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now,
-                CreatedBy = currentUserId,
-                UpdatedBy = currentUserId,
-                CategoryId = int.Parse(inFormData["category"])
+                CreatedById = currentUserId,
+                UpdatedById = currentUserId,
+                DiscountPrices = inProduct.DiscountPrices,
+                // product images need to invoke another method 
+                // for image compression & upload to s3 first
+                // return the url links after upload
+                // ProductImages = inProduct.ProductImages
+                //CategoryId = int.Parse(inFormData["category"])
             };
 
             try
@@ -115,7 +184,7 @@ namespace FYP.APIs
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, IFormCollection inFormData)
+        public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product inProduct)
         {
             // get current logged in user's id
             //int currentUserId = int.Parse(User.FindFirst("userid").Value);
@@ -124,11 +193,21 @@ namespace FYP.APIs
             Product product = new Product()
             {
                 ProductId = id,
-                ProductName = inFormData["productName"],
-                CurrentQuantity = int.Parse(inFormData["currentQuantity"]),
-                Description = inFormData["description"],
-                Price = decimal.Parse(inFormData["price"]),
-                UpdatedBy = currentUserId
+                ProductName = inProduct.ProductName,
+                Description = inProduct.Description,
+                Price = decimal.Parse(inProduct.Price.ToString()),
+                ImageWidth = double.Parse(inProduct.ImageWidth.ToString()),
+                ImageHeight = double.Parse(inProduct.ImageHeight.ToString()),
+                EffectiveStartDate = DateTime.ParseExact(inProduct.EffectiveStartDate.ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                EffectiveEndDate = DateTime.ParseExact(inProduct.EffectiveEndDate.ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                UpdatedAt = DateTime.Now,
+                UpdatedById = currentUserId,
+                DiscountPrices = inProduct.DiscountPrices,
+                // product images need to invoke another method 
+                // for image compression & upload to s3 first
+                // return the url links after upload
+                // ProductImages = inProduct.ProductImages
+                //CategoryId = int.Parse(inFormData["category"])
             };
 
             try

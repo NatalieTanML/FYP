@@ -18,6 +18,7 @@ namespace FYP.Models
         public byte[] Email { get; set; }
 
         [ForeignKey("UpdatedBy")]
+        [Column("UpdatedBy")]
         public int? UpdatedById { get; set; }
         public User UpdatedBy { get; set; }
 

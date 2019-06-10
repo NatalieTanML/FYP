@@ -16,6 +16,8 @@ namespace FYP.Models
         public string Country { get; set; }
         public string State { get; set; }
 
+        public List<Order> Orders { get; set; }
+
         [ForeignKey("Hotel")]
         public int? HotelId { get; set; }
         public Hotel Hotel { get; set; }

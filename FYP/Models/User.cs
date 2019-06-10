@@ -19,6 +19,7 @@ namespace FYP.Models
         public DateTime UpdatedAt { get; set; }
 
         [ForeignKey("CreatedBy")]
+        [Column("CreatedBy")]
         public int? CreatedById { get; set; }
         public User CreatedBy { get; set; }
 

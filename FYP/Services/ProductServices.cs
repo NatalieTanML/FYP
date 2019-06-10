@@ -37,13 +37,23 @@ namespace FYP.Services
         public async Task<IEnumerable<Product>> GetAll()
         {
             // returns full list of products including join with category table
-            return await _context.Products.Include(product => product.Category).ToListAsync();
+            return await _context.Products
+                .Include(product => product.Category)
+                .Include(product => product.ProductImages)
+                .Include(product => product.DiscountPrices)
+                .Include(product => product.Options)
+                .ToListAsync();
         }
 
         public async Task<Product> GetById(int id)
         {
             // searches product, including join with category
-            return await _context.Products.Include(product => product.Category).FirstOrDefaultAsync(p => p.ProductId == id);
+            return await _context.Products
+                .Include(product => product.Category)
+                .Include(product => product.ProductImages)
+                .Include(product => product.DiscountPrices)
+                .Include(product => product.Options)
+                .FirstOrDefaultAsync(p => p.ProductId == id);
         }
 
         public async Task<Product> Create(Product product)
@@ -72,8 +82,14 @@ namespace FYP.Services
             product.ProductName = productParam.ProductName;
             product.Description = productParam.Description;
             product.Price = productParam.Price;
+            product.ImageWidth = productParam.ImageWidth;
+            product.ImageHeight = productParam.ImageHeight;
+            product.EffectiveStartDate = productParam.EffectiveStartDate;
+            product.EffectiveEndDate = productParam.EffectiveEndDate;
+            product.DiscountPrices = productParam.DiscountPrices;
+            product.ProductImages = productParam.ProductImages;
             product.UpdatedAt = DateTime.Now;
-            product.UpdatedBy = productParam.UpdatedBy;
+            product.UpdatedById = 4; // update to get current user's id
 
             _context.Products.Update(product);
             await _context.SaveChangesAsync();
