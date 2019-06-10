@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -33,111 +34,176 @@ namespace FYP.APIs
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var products = await _productService.GetAll();
-            List<object> productList = new List<object>();
-            foreach (Product product in products)
+            try
             {
-                productList.Add(new
+                var products = await _productService.GetAll();
+                List<object> productList = new List<object>();
+                foreach (Product product in products)
                 {
-                    productId = product.ProductId,
-                    productName = product.ProductName,
-                    price = product.Price,
-                    categoryName = product.Category.CategoryName,
-                    description = product.Description,
-                    currentQuantity = product.CurrentQuantity,
-                    minimumQuantity = product.MinimumQuantity,
-                    updatedBy = product.UpdatedBy
-                });
+                    productList.Add(new
+                    {
+                        productId = product.ProductId,
+                        productName = product.ProductName,
+                        price = product.Price,
+                        categoryName = product.Category.CategoryName,
+                        description = product.Description,
+                        //currentQuantity = product.CurrentQuantity,
+                        //minimumQuantity = product.MinimumQuantity,
+                        //updatedBy = product.UpdatedBy
+                    });
+                }
+                return new JsonResult(productList);
+            }catch(Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
-            return new JsonResult(productList);
         }
+
+        //[AllowAnonymous]
+        //[HttpGet("{id}")]
+        //public async Task<IActionResult> GetProduct(int id)
+        //{
+        //    try
+        //    {
+        //        var product = await _productService.GetById(id);
+        //        return Ok(new
+        //        {
+        //            productId = product.ProductId,
+        //            productName = product.ProductName,
+        //            price = product.Price,
+        //            categoryName = product.Category.CategoryName,
+        //            description = product.Description,
+        //            currentQuantity = product.CurrentQuantity,
+        //            minimumQuantity = product.MinimumQuantity,
+        //            updatedBy = product.UpdatedBy
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(new { message = ex.Message });
+        //    }
+
+        //}
+
+        //[HttpPost]
+        //public async Task<IActionResult> CreateProduct([FromForm] IFormCollection inFormData)
+        //{
+        //    // get current logged in user's id
+        //    //int currentUserId = int.Parse(User.FindFirst("userid").Value);
+        //    int currentUserId = 4;
+
+        //    // create new product object to be added
+        //    Product newProduct = new Product()
+        //    {
+        //        ProductName = inFormData["productname"],
+        //        CurrentQuantity = int.Parse(inFormData["currentquantity"]),
+        //        MinimumQuantity = int.Parse(inFormData["minimumquantity"]),
+        //        Description = inFormData["description"],
+        //        Price = decimal.Parse(inFormData["price"]),
+        //        CreatedAt = DateTime.Now,
+        //        UpdatedAt = DateTime.Now,
+        //        CreatedBy = currentUserId,
+        //        UpdatedBy = currentUserId,
+        //        CategoryId = int.Parse(inFormData["category"])
+        //    };
+
+        //    try
+        //    {
+        //        // try add to database
+        //        await _productService.Create(newProduct);
+        //        return Ok(new
+        //        {
+        //            createSuccess = true,
+        //            message = "Product created successfully!"
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(new { message = ex.Message });
+        //    }
+        //}
+
+        //[HttpPut("{id}")]
+        //public async Task<IActionResult> UpdateProduct(int id, IFormCollection inFormData)
+        //{
+        //    // get current logged in user's id
+        //    //int currentUserId = int.Parse(User.FindFirst("userid").Value);
+        //    int currentUserId = 4;
+
+        //    Product product = new Product()
+        //    {
+        //        ProductId = id,
+        //        ProductName = inFormData["productName"],
+        //        CurrentQuantity = int.Parse(inFormData["currentQuantity"]),
+        //        Description = inFormData["description"],
+        //        Price = decimal.Parse(inFormData["price"]),
+        //        UpdatedBy = currentUserId
+        //    };
+
+        //    try
+        //    {
+        //        // save (excluding password update)
+        //        await _productService.Update(product);
+        //        return Ok(new { message = "Updated product details successfully!" });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // return error message 
+        //        return BadRequest(new { message = ex.Message });
+        //    }
+        //}
+
+        //[HttpDelete("{id}")]
+        //public async Task<IActionResult> DeleteProduct(int id)
+        //{
+        //    await _productService.Delete(id);
+        //    return Ok(new { message = "Product deleted successfully." });
+        //}
+
+        //[AllowAnonymous]
+        //[HttpPost("getOrder")]
+        //public async Task<IActionResult> GetPayPalOrder([FromForm] IFormCollection inFormData)
+        //{
+        //    var orderId = inFormData["orderId"];
+        //    var order = await _productService.GetPayPalOrder(orderId);
+        //    return new JsonResult(order);
+        //}
 
         [AllowAnonymous]
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetProduct(int id)
+        [HttpPost("sanitizeUserCart")]
+        public async Task<IActionResult> sanitizeUserCart([FromForm] IFormCollection inFormData)
         {
+            var files0 = inFormData.Files[0];
+            var files1 = inFormData.Files[1];
+            //https://medium.com/@t.masonbarneydev/iterating-asynchronously-how-to-use-async-await-with-foreach-in-c-d7e6d21f89fa
+
+            //http://hamidmosalla.com/2018/04/27/using-task-whenany-and-task-whenall/
+
+            //https://jeremylindsayni.wordpress.com/2019/03/11/using-async-await-and-task-whenall-to-improve-the-overall-speed-of-your-c-code/
+
+            // https://ourcodeworld.com/articles/read/322/how-to-convert-a-base64-image-into-a-image-file-and-upload-it-with-an-asynchronous-form-using-jquery
+
+            // http://jaliyaudagedara.blogspot.com/2014/08/how-to-directly-upload-files-to-amazon.html
+
+            List<Task<Product>> productTasks = new List<Task<Product>>();
+       
             try
             {
-                var product = await _productService.GetById(id);
-                return Ok(new
+                foreach (var key in inFormData.Keys)
                 {
-                    productId = product.ProductId,
-                    productName = product.ProductName,
-                    price = product.Price,
-                    categoryName = product.Category.CategoryName,
-                    description = product.Description,
-                    currentQuantity = product.CurrentQuantity,
-                    minimumQuantity = product.MinimumQuantity,
-                    updatedBy = product.UpdatedBy
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> CreateProduct([FromForm] IFormCollection inFormData)
-        {
-            // get current logged in user's id
-            //int currentUserId = int.Parse(User.FindFirst("userid").Value);
-            int currentUserId = 4;
-
-            // create new product object to be added
-            Product newProduct = new Product()
-            {
-                ProductName = inFormData["productname"],
-                CurrentQuantity = int.Parse(inFormData["currentquantity"]),
-                MinimumQuantity = int.Parse(inFormData["minimumquantity"]),
-                Description = inFormData["description"],
-                Price = decimal.Parse(inFormData["price"]),
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now,
-                CreatedBy = currentUserId,
-                UpdatedBy = currentUserId,
-                CategoryId = int.Parse(inFormData["category"])
-            };
-
-            try
-            {
-                // try add to database
-                await _productService.Create(newProduct);
-                return Ok(new
-                {
-                    createSuccess = true,
-                    message = "Product created successfully!"
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, IFormCollection inFormData)
-        {
-            // get current logged in user's id
-            //int currentUserId = int.Parse(User.FindFirst("userid").Value);
-            int currentUserId = 4;
-
-            Product product = new Product()
-            {
-                ProductId = id,
-                ProductName = inFormData["productName"],
-                CurrentQuantity = int.Parse(inFormData["currentQuantity"]),
-                Description = inFormData["description"],
-                Price = decimal.Parse(inFormData["price"]),
-                UpdatedBy = currentUserId
-            };
-
-            try
-            {
-                // save (excluding password update)
-                await _productService.Update(product);
-                return Ok(new { message = "Updated product details successfully!" });
+                    if (key.Contains("arr"))
+                    {
+                        int i = 0;
+                        var id = int.Parse(inFormData[key][0]);
+                        var name = inFormData[key][1];
+                        var image = inFormData.Files[i];
+                        productTasks.Add(_productService.GetUserCart(id, name));
+                        i++;
+                    }
+                    
+                }
+                var productResults = await Task.WhenAll<Product>(productTasks);
+                return new JsonResult(productResults);
             }
             catch (Exception ex)
             {
@@ -145,107 +211,5 @@ namespace FYP.APIs
                 return BadRequest(new { message = ex.Message });
             }
         }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProduct(int id)
-        {
-            await _productService.Delete(id);
-            return Ok(new { message = "Product deleted successfully." });
-        }
-
-        [AllowAnonymous]
-        [HttpPost("getOrder")]
-        public async Task<IActionResult> GetPayPalOrder([FromForm] IFormCollection inFormData)
-        {
-            var orderId = inFormData["orderId"];
-            var order = await _productService.GetPayPalOrder(orderId);
-            return new JsonResult(order);
-        }
-
-        [AllowAnonymous]
-        [HttpPost("sanitizeUserCart")]
-        public async Task<IActionResult> sanitizeUserCart([FromBody] string productList)
-        {
-
-            // 1. do a for loop to retrieve out all the productId
-            // Qn 
-            // 2. package it into an array
-            // 3. Send the array
-            // research how to send back json? that will be easier
-
-        
-
-            List<int> productIdList = new List<int>();
-            //var hi = inFormData["productId"];
-
-            // Looping through all the keys in the IFormCollection
-            //foreach (var key in inFormData.Keys)
-            //{
-            //    if(key.Equals("productId[]"))
-            //    {
-            //        var productId = inFormData["productId[]"].Split(',');
-            //        //productIdList.Add(int.Parse(productId));
-            //    }
-
-            //}
-
-                //foreach (string description in inFormData.Keys)
-                //{
-                //    if (description.Equals("productId[]"))
-                //    {
-                //        var v = inFormData[description];
-                //        foreach(var stringItem in v)
-                //        {
-                //            productIdList.Add(int.Parse(stringItem));
-                //        }
-                //        //var stringItems = v.Split(',');
-                //        //foreach (var stringItem in stringItems)
-                //        //{
-                //        //    //do something with stringItem
-                //        //}
-                //    }
-                //}
-
-                ////productIdList.Add(Array.ConvertAll((inFormData["productId[]"], int.Parse));
-
-                //var product = await _productService.GetUserCart(productIdList);
-         
-            // Looping through all the keys in the IFormCollection
-            //foreach (var key in inFormData.Keys)
-            //{
-            //    productIdList.Add(key["productId[]"]);
-            //}
-
-            //for (int i = 0; i < 5; i++)
-            //{
-
-            //}
-
-     
-
-                  // returns full list of products including join with category table
-           // return await _context.Products.Include(product => product.Category).ToListAsync();
-            //var products = await _productService.GetAll();
-            //List<object> productList = new List<object>();
-            //foreach (Product product in products)
-            //{
-            //    productList.Add(new
-            //    {
-            //        productId = product.ProductId,
-            //        productName = product.ProductName,
-            //        price = product.Price,
-            //        categoryName = product.Category.CategoryName,
-            //        description = product.Description,
-            //        currentQuantity = product.CurrentQuantity,
-            //        minimumQuantity = product.MinimumQuantity,
-            //        updatedBy = product.UpdatedBy
-            //    });
-            //}
-            //return new JsonResult(productList);
-
-
-            return Ok();
-        }
     }
 }
-    

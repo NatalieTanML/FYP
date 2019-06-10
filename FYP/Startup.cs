@@ -71,7 +71,7 @@ namespace FYP
 
             // configure DI for application services
             // TODO: Add new scoped services each time you create a new controller & service
-            services.AddScoped<IUserService, UserService>();
+            //services.AddScoped<IUserService, UserService>();
             services.AddScoped<IProductService, ProductService>();
         }
 

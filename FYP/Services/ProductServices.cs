@@ -16,17 +16,18 @@ using BraintreeHttp;
 using PayPalCheckoutSdk.Core;
 using PayPalCheckoutSdk.Orders;
 
+
 namespace FYP.Services
 {
     public interface IProductService
     {
         Task<IEnumerable<Product>> GetAll();
-        Task<Product> GetById(int id);
+        //Task<Product> GetById(int id);
         Task<Product> Create(Product product);
-        Task Update(Product productParam);
+        //Task Update(Product productParam);
         Task Delete(int id);
         Task<HttpResponse> GetPayPalOrder(String orderId);
-        Task<IEnumerable<Product>> GetUserCart(List<int>productid);
+        Task<Product> GetUserCart(int productId, string name);
     }
 
     public class ProductService : IProductService
@@ -66,24 +67,24 @@ namespace FYP.Services
             return product;
         }
 
-        public async Task Update(Product productParam)
-        {
-            var product = await _context.Products.FindAsync(productParam.ProductId);
+        //public async Task Update(Product productParam)
+        //{
+        //    var product = await _context.Products.FindAsync(productParam.ProductId);
 
-            // if product does not exist
-            if (product == null)
-                throw new AppException("Product not found.");
+        //    // if product does not exist
+        //    if (product == null)
+        //        throw new AppException("Product not found.");
 
-            // update product properties
-            product.ProductName = productParam.ProductName;
-            product.Description = productParam.Description;
-            product.Price = productParam.Price;
-            product.UpdatedAt = DateTime.Now;
-            product.UpdatedBy = productParam.UpdatedBy;
+        //    // update product properties
+        //    product.ProductName = productParam.ProductName;
+        //    product.Description = productParam.Description;
+        //    product.Price = productParam.Price;
+        //    product.UpdatedAt = DateTime.Now;
+        //    product.UpdatedBy = productParam.UpdatedBy;
 
-            _context.Products.Update(product);
-            await _context.SaveChangesAsync();
-        }
+        //    _context.Products.Update(product);
+        //    await _context.SaveChangesAsync();
+        //}
 
         public async Task Delete(int id)
         {
@@ -132,19 +133,15 @@ namespace FYP.Services
         //    //https://stackoverflow.com/questions/5624614/get-a-list-of-elements-by-their-id-in-entity-framework
         //    //https://stackoverflow.com/questions/16824510/select-multiple-records-based-on-list-of-ids-with-linq
 
-        //    // var idlist = new int[1, 2, 2, 2, 2]; // same user is selected 4 times
-        //    //var userprofiles = _datacontext.userprofile.where(e => idlist.contains(e)).tolist();
-        //    //var roles = db.roles.where(r => user.roles.contains(r.roleid));
-
-        //    // returns full list of products based on productid including join with category table
-        //    //return await _context.products.include(product => product.category).tolistasync();
-
-        //    return await _context.Products.Where(p => productid.Contains(p.ProductId)).ToList();
-        //}
-
-        public async Task<IEnumerable<Product>> GetUserCart(List<int> productid)
+        public async Task<Product> GetUserCart(int productId, string name)
         {
-            return await _context.Products.Where(product => productid.Contains(product.ProductId)).ToListAsync();
+            //https://stackoverflow.com/questions/7809745/linq-code-to-select-one-item
+            var product =  await _context.Products.FirstOrDefaultAsync(p => p.ProductId == productId);
+
+            // change it to varient
+            product.ProductName = name;
+            //product.ProductImages = file;
+            return product;
         }
     }
 }

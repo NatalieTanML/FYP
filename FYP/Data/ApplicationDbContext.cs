@@ -39,14 +39,14 @@ namespace FYP.Data
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
 
-            modelBuilder.Entity<Product>()
-                .HasOne(input => input.User)
-                .WithMany()
-                .HasForeignKey(input => input.CreatedBy)
-                .OnDelete(DeleteBehavior.Restrict)
-                .HasForeignKey(input => input.UpdatedBy)
-                .OnDelete(DeleteBehavior.Restrict)
-                .IsRequired();
+            //modelBuilder.Entity<Product>()
+            //    .HasOne(input => input.User)
+            //    .WithMany()
+            //    .HasForeignKey(input => input.CreatedBy)
+            //    .OnDelete(DeleteBehavior.Restrict)
+            //    .HasForeignKey(input => input.UpdatedBy)
+            //    .OnDelete(DeleteBehavior.Restrict)
+            //    .IsRequired();
         }
     }
 }

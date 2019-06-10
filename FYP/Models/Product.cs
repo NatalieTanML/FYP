@@ -19,13 +19,13 @@ namespace FYP.Models
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
-        [ForeignKey("CreatedBy")]
-        public int CreatedById { get; set; }
-        public User CreatedBy { get; set; }
+        //[ForeignKey("CreatedBy")]
+        //public int CreatedById { get; set; }
+        //public User CreatedBy { get; set; }
 
-        [ForeignKey("UpdatedBy")]
-        public int UpdatedById { get; set; }
-        public User UpdatedBy { get; set; }
+        //[ForeignKey("UpdatedBy")]
+        //public int UpdatedById { get; set; }
+        //public User UpdatedBy { get; set; }
 
         [ForeignKey("Category")]
         public int CategoryId { get; set; }
