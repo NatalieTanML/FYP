@@ -16,18 +16,17 @@ using BraintreeHttp;
 using PayPalCheckoutSdk.Core;
 using PayPalCheckoutSdk.Orders;
 
-
 namespace FYP.Services
 {
     public interface IProductService
     {
         Task<IEnumerable<Product>> GetAll();
-        //Task<Product> GetById(int id);
+        Task<Product> GetById(int id);
         Task<Product> Create(Product product);
-        //Task Update(Product productParam);
+        Task Update(Product productParam);
         Task Delete(int id);
         Task<HttpResponse> GetPayPalOrder(String orderId);
-        Task<Product> GetUserCart(int productId, string name);
+        Task<IEnumerable<Product>> GetUserCart(List<int>productid);
     }
 
     public class ProductService : IProductService
@@ -44,13 +43,23 @@ namespace FYP.Services
         public async Task<IEnumerable<Product>> GetAll()
         {
             // returns full list of products including join with category table
-            return await _context.Products.Include(product => product.Category).ToListAsync();
+            return await _context.Products
+                .Include(product => product.Category)
+                .Include(product => product.ProductImages)
+                .Include(product => product.DiscountPrices)
+                .Include(product => product.Options)
+                .ToListAsync();
         }
 
         public async Task<Product> GetById(int id)
         {
             // searches product, including join with category
-            return await _context.Products.Include(product => product.Category).FirstOrDefaultAsync(p => p.ProductId == id);
+            return await _context.Products
+                .Include(product => product.Category)
+                .Include(product => product.ProductImages)
+                .Include(product => product.DiscountPrices)
+                .Include(product => product.Options)
+                .FirstOrDefaultAsync(p => p.ProductId == id);
         }
 
         public async Task<Product> Create(Product product)
@@ -67,24 +76,30 @@ namespace FYP.Services
             return product;
         }
 
-        //public async Task Update(Product productParam)
-        //{
-        //    var product = await _context.Products.FindAsync(productParam.ProductId);
+        public async Task Update(Product productParam)
+        {
+            var product = await _context.Products.FindAsync(productParam.ProductId);
 
-        //    // if product does not exist
-        //    if (product == null)
-        //        throw new AppException("Product not found.");
+            // if product does not exist
+            if (product == null)
+                throw new AppException("Product not found.");
 
-        //    // update product properties
-        //    product.ProductName = productParam.ProductName;
-        //    product.Description = productParam.Description;
-        //    product.Price = productParam.Price;
-        //    product.UpdatedAt = DateTime.Now;
-        //    product.UpdatedBy = productParam.UpdatedBy;
+            // update product properties
+            product.ProductName = productParam.ProductName;
+            product.Description = productParam.Description;
+            product.Price = productParam.Price;
+            product.ImageWidth = productParam.ImageWidth;
+            product.ImageHeight = productParam.ImageHeight;
+            product.EffectiveStartDate = productParam.EffectiveStartDate;
+            product.EffectiveEndDate = productParam.EffectiveEndDate;
+            product.DiscountPrices = productParam.DiscountPrices;
+            product.ProductImages = productParam.ProductImages;
+            product.UpdatedAt = DateTime.Now;
+            product.UpdatedById = 4; // update to get current user's id
 
-        //    _context.Products.Update(product);
-        //    await _context.SaveChangesAsync();
-        //}
+            _context.Products.Update(product);
+            await _context.SaveChangesAsync();
+        }
 
         public async Task Delete(int id)
         {
@@ -133,15 +148,19 @@ namespace FYP.Services
         //    //https://stackoverflow.com/questions/5624614/get-a-list-of-elements-by-their-id-in-entity-framework
         //    //https://stackoverflow.com/questions/16824510/select-multiple-records-based-on-list-of-ids-with-linq
 
-        public async Task<Product> GetUserCart(int productId, string name)
-        {
-            //https://stackoverflow.com/questions/7809745/linq-code-to-select-one-item
-            var product =  await _context.Products.FirstOrDefaultAsync(p => p.ProductId == productId);
+        //    // var idlist = new int[1, 2, 2, 2, 2]; // same user is selected 4 times
+        //    //var userprofiles = _datacontext.userprofile.where(e => idlist.contains(e)).tolist();
+        //    //var roles = db.roles.where(r => user.roles.contains(r.roleid));
 
-            // change it to varient
-            product.ProductName = name;
-            //product.ProductImages = file;
-            return product;
+        //    // returns full list of products based on productid including join with category table
+        //    //return await _context.products.include(product => product.category).tolistasync();
+
+        //    return await _context.Products.Where(p => productid.Contains(p.ProductId)).ToList();
+        //}
+
+        public async Task<IEnumerable<Product>> GetUserCart(List<int> productid)
+        {
+            return await _context.Products.Where(product => productid.Contains(product.ProductId)).ToListAsync();
         }
     }
 }

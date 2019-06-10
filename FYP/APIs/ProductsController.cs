@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using FYP.Helpers;
@@ -9,7 +10,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -34,182 +34,209 @@ namespace FYP.APIs
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
+            var products = await _productService.GetAll();
+            List<object> productList = new List<object>();
+            foreach (Product product in products)
+            {
+                productList.Add(new
+                {
+                    productId = product.ProductId,
+                    productName = product.ProductName,
+                    price = product.Price,
+                    description = product.Description,
+                    imageWidth = product.ImageWidth,
+                    imageHeight = product.ImageHeight,
+                    effectiveStartDate = product.EffectiveStartDate,
+                    effectiveEndDate = product.EffectiveEndDate,
+                    updatedAt = product.UpdatedAt,
+                    updatedById = product.UpdatedById,
+                    categoryId = product.CategoryId,
+                    categoryName = product.Category.CategoryName,
+                    discountPrice = product.DiscountPrices
+                        .Select(i => new
+                        {
+                            i.DiscountPriceId,
+                            i.EffectiveStartDate,
+                            i.EffectiveEndDate,
+                            i.DiscountValue,
+                            i.IsPercentage
+                        }),
+                    productImages = product.ProductImages
+                        .Select(i => new
+                        {
+                            i.ProductImageId,
+                            i.ImageKey,
+                            i.ImageUrl
+                        }),
+                    options = product.Options
+                        .Select(i => new
+                        {
+                            i.OptionId,
+                            i.OptionType,
+                            i.OptionValue,
+                            i.CurrentQuantity,
+                            i.MinimumQuantity
+                        })
+                });
+            }
+            return new JsonResult(productList);
+        }
+
+        [AllowAnonymous]
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetProduct(int id)
+        {
             try
             {
-                var products = await _productService.GetAll();
-                List<object> productList = new List<object>();
-                foreach (Product product in products)
+                var product = await _productService.GetById(id);
+
+                return Ok(new
                 {
-                    productList.Add(new
-                    {
-                        productId = product.ProductId,
-                        productName = product.ProductName,
-                        price = product.Price,
-                        categoryName = product.Category.CategoryName,
-                        description = product.Description,
-                        //currentQuantity = product.CurrentQuantity,
-                        //minimumQuantity = product.MinimumQuantity,
-                        //updatedBy = product.UpdatedBy
-                    });
-                }
-                return new JsonResult(productList);
-            }catch(Exception ex)
+                    productId = product.ProductId,
+                    productName = product.ProductName,
+                    price = product.Price,
+                    description = product.Description,
+                    imageWidth = product.ImageWidth,
+                    imageHeight = product.ImageHeight,
+                    effectiveStartDate = product.EffectiveStartDate,
+                    effectiveEndDate = product.EffectiveEndDate,
+                    updatedAt = product.UpdatedAt,
+                    updatedById = product.UpdatedById,
+                    categoryId = product.CategoryId,
+                    categoryName = product.Category.CategoryName,
+                    discountPrice = product.DiscountPrices
+                        .Select(i => new
+                        {
+                            i.DiscountPriceId,
+                            i.EffectiveStartDate,
+                            i.EffectiveEndDate,
+                            i.DiscountValue,
+                            i.IsPercentage
+                        }),
+                    productImages = product.ProductImages
+                        .Select(i => new
+                        {
+                            i.ProductImageId,
+                            i.ImageKey,
+                            i.ImageUrl
+                        }),
+                    options = product.Options
+                        .Select(i => new
+                        {
+                            i.OptionId,
+                            i.OptionType,
+                            i.OptionValue,
+                            i.CurrentQuantity,
+                            i.MinimumQuantity
+                        })
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateProduct([FromBody] Product inProduct)
+        {
+            // get current logged in user's id
+            //int currentUserId = int.Parse(User.FindFirst("userid").Value);
+            int currentUserId = 4;
+
+            // create new product object to be added
+            Product newProduct = new Product()
+            {
+                ProductName = inProduct.ProductName,
+                Description = inProduct.Description,
+                Price = decimal.Parse(inProduct.Price.ToString()),
+                ImageWidth = double.Parse(inProduct.ImageWidth.ToString()),
+                ImageHeight = double.Parse(inProduct.ImageHeight.ToString()),
+                EffectiveStartDate = DateTime.ParseExact(inProduct.EffectiveStartDate.ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                EffectiveEndDate = DateTime.ParseExact(inProduct.EffectiveEndDate.ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now,
+                CreatedById = currentUserId,
+                UpdatedById = currentUserId,
+                DiscountPrices = inProduct.DiscountPrices,
+                // product images need to invoke another method 
+                // for image compression & upload to s3 first
+                // return the url links after upload
+                // ProductImages = inProduct.ProductImages
+                //CategoryId = int.Parse(inFormData["category"])
+            };
+
+            try
+            {
+                // try add to database
+                await _productService.Create(newProduct);
+                return Ok(new
+                {
+                    createSuccess = true,
+                    message = "Product created successfully!"
+                });
+            }
+            catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
         }
 
-        //[AllowAnonymous]
-        //[HttpGet("{id}")]
-        //public async Task<IActionResult> GetProduct(int id)
-        //{
-        //    try
-        //    {
-        //        var product = await _productService.GetById(id);
-        //        return Ok(new
-        //        {
-        //            productId = product.ProductId,
-        //            productName = product.ProductName,
-        //            price = product.Price,
-        //            categoryName = product.Category.CategoryName,
-        //            description = product.Description,
-        //            currentQuantity = product.CurrentQuantity,
-        //            minimumQuantity = product.MinimumQuantity,
-        //            updatedBy = product.UpdatedBy
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(new { message = ex.Message });
-        //    }
-
-        //}
-
-        //[HttpPost]
-        //public async Task<IActionResult> CreateProduct([FromForm] IFormCollection inFormData)
-        //{
-        //    // get current logged in user's id
-        //    //int currentUserId = int.Parse(User.FindFirst("userid").Value);
-        //    int currentUserId = 4;
-
-        //    // create new product object to be added
-        //    Product newProduct = new Product()
-        //    {
-        //        ProductName = inFormData["productname"],
-        //        CurrentQuantity = int.Parse(inFormData["currentquantity"]),
-        //        MinimumQuantity = int.Parse(inFormData["minimumquantity"]),
-        //        Description = inFormData["description"],
-        //        Price = decimal.Parse(inFormData["price"]),
-        //        CreatedAt = DateTime.Now,
-        //        UpdatedAt = DateTime.Now,
-        //        CreatedBy = currentUserId,
-        //        UpdatedBy = currentUserId,
-        //        CategoryId = int.Parse(inFormData["category"])
-        //    };
-
-        //    try
-        //    {
-        //        // try add to database
-        //        await _productService.Create(newProduct);
-        //        return Ok(new
-        //        {
-        //            createSuccess = true,
-        //            message = "Product created successfully!"
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(new { message = ex.Message });
-        //    }
-        //}
-
-        //[HttpPut("{id}")]
-        //public async Task<IActionResult> UpdateProduct(int id, IFormCollection inFormData)
-        //{
-        //    // get current logged in user's id
-        //    //int currentUserId = int.Parse(User.FindFirst("userid").Value);
-        //    int currentUserId = 4;
-
-        //    Product product = new Product()
-        //    {
-        //        ProductId = id,
-        //        ProductName = inFormData["productName"],
-        //        CurrentQuantity = int.Parse(inFormData["currentQuantity"]),
-        //        Description = inFormData["description"],
-        //        Price = decimal.Parse(inFormData["price"]),
-        //        UpdatedBy = currentUserId
-        //    };
-
-        //    try
-        //    {
-        //        // save (excluding password update)
-        //        await _productService.Update(product);
-        //        return Ok(new { message = "Updated product details successfully!" });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        // return error message 
-        //        return BadRequest(new { message = ex.Message });
-        //    }
-        //}
-
-        //[HttpDelete("{id}")]
-        //public async Task<IActionResult> DeleteProduct(int id)
-        //{
-        //    await _productService.Delete(id);
-        //    return Ok(new { message = "Product deleted successfully." });
-        //}
-
-        //[AllowAnonymous]
-        //[HttpPost("getOrder")]
-        //public async Task<IActionResult> GetPayPalOrder([FromForm] IFormCollection inFormData)
-        //{
-        //    var orderId = inFormData["orderId"];
-        //    var order = await _productService.GetPayPalOrder(orderId);
-        //    return new JsonResult(order);
-        //}
-
-        [AllowAnonymous]
-        [HttpPost("sanitizeUserCart")]
-        public async Task<IActionResult> sanitizeUserCart([FromForm] IFormCollection inFormData)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product inProduct)
         {
-            var files0 = inFormData.Files[0];
-            var files1 = inFormData.Files[1];
-            //https://medium.com/@t.masonbarneydev/iterating-asynchronously-how-to-use-async-await-with-foreach-in-c-d7e6d21f89fa
+            // get current logged in user's id
+            //int currentUserId = int.Parse(User.FindFirst("userid").Value);
+            int currentUserId = 4;
 
-            //http://hamidmosalla.com/2018/04/27/using-task-whenany-and-task-whenall/
+            Product product = new Product()
+            {
+                ProductId = id,
+                ProductName = inProduct.ProductName,
+                Description = inProduct.Description,
+                Price = decimal.Parse(inProduct.Price.ToString()),
+                ImageWidth = double.Parse(inProduct.ImageWidth.ToString()),
+                ImageHeight = double.Parse(inProduct.ImageHeight.ToString()),
+                EffectiveStartDate = DateTime.ParseExact(inProduct.EffectiveStartDate.ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                EffectiveEndDate = DateTime.ParseExact(inProduct.EffectiveEndDate.ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
+                UpdatedAt = DateTime.Now,
+                UpdatedById = currentUserId,
+                DiscountPrices = inProduct.DiscountPrices,
+                // product images need to invoke another method 
+                // for image compression & upload to s3 first
+                // return the url links after upload
+                // ProductImages = inProduct.ProductImages
+                //CategoryId = int.Parse(inFormData["category"])
+            };
 
-            //https://jeremylindsayni.wordpress.com/2019/03/11/using-async-await-and-task-whenall-to-improve-the-overall-speed-of-your-c-code/
-
-            // https://ourcodeworld.com/articles/read/322/how-to-convert-a-base64-image-into-a-image-file-and-upload-it-with-an-asynchronous-form-using-jquery
-
-            // http://jaliyaudagedara.blogspot.com/2014/08/how-to-directly-upload-files-to-amazon.html
-
-            List<Task<Product>> productTasks = new List<Task<Product>>();
-       
             try
             {
-                foreach (var key in inFormData.Keys)
-                {
-                    if (key.Contains("arr"))
-                    {
-                        int i = 0;
-                        var id = int.Parse(inFormData[key][0]);
-                        var name = inFormData[key][1];
-                        var image = inFormData.Files[i];
-                        productTasks.Add(_productService.GetUserCart(id, name));
-                        i++;
-                    }
-                    
-                }
-                var productResults = await Task.WhenAll<Product>(productTasks);
-                return new JsonResult(productResults);
+                // save (excluding password update)
+                await _productService.Update(product);
+                return Ok(new { message = "Updated product details successfully!" });
             }
             catch (Exception ex)
             {
                 // return error message 
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProduct(int id)
+        {
+            await _productService.Delete(id);
+            return Ok(new { message = "Product deleted successfully." });
+        }
+
+        [AllowAnonymous]
+        [HttpPost("getOrder")]
+        public async Task<IActionResult> GetPayPalOrder([FromForm] IFormCollection inFormData)
+        {
+            var orderId = inFormData["orderId"];
+            var order = await _productService.GetPayPalOrder(orderId);
+            return new JsonResult(order);
         }
     }
 }

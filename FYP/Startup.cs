@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FYP.Data;
 using FYP.Helpers;
+using FYP.Hubs;
 using FYP.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -39,7 +40,12 @@ namespace FYP
             });
 
             services.AddCors();
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddMvc()
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
+                .AddJsonOptions(
+                    options => options.SerializerSettings.ReferenceLoopHandling =
+                    Newtonsoft.Json.ReferenceLoopHandling.Ignore
+                ) ;
             services.AddDbContextPool<ApplicationDbContext>(
                 options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"))
             );
@@ -69,10 +75,14 @@ namespace FYP
                 };
             });
 
+            services.AddSignalR();
+
             // configure DI for application services
-            // TODO: Add new scoped services each time you create a new controller & service
-            //services.AddScoped<IUserService, UserService>();
+            // TODO: Add new services each time you create a new controller & service
+            services.AddScoped<IUserService, UserService>();
             services.AddScoped<IProductService, ProductService>();
+            services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<IOrderHub, OrderHub>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -98,12 +108,17 @@ namespace FYP
                 .AllowAnyHeader());
 
             app.UseAuthentication();
-
+            
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
+            });
+
+            app.UseSignalR(route =>
+            {
+                route.MapHub<OrderHub>("/order-hub");
             });
         }
     }
