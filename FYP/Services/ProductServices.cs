@@ -63,9 +63,9 @@ namespace FYP.Services
                 .Skip((pageNumber - 1) * productsPerPage)
                 .Take(productsPerPage)
                 .Include(product => product.Category)
-                .Include(product => product.ProductImages)
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
+                .ThenInclude(o => o.ProductImages)
                 .ToListAsync();
         }
 

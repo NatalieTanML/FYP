@@ -111,20 +111,21 @@ namespace FYP.APIs
                                 i.DiscountValue,
                                 i.IsPercentage
                             }),
-                        productImages = product.ProductImages
-                            .Select(i => new
-                            {
-                                i.ImageUrl
-                            }),
                         options = product.Options
-                            .Select(i => new
-                            {
-                                i.OptionId,
-                                i.OptionType,
-                                i.OptionValue,
-                                i.CurrentQuantity,
-                                i.MinimumQuantity
-                            })
+                        .Select(i => new
+                        {
+                            i.OptionId,
+                            i.OptionType,
+                            i.OptionValue,
+                            i.CurrentQuantity,
+                            i.MinimumQuantity,
+                            productImages = i.ProductImages
+                                .Select(p => new {
+                                    p.ProductImageId,
+                                    p.ImageKey,
+                                    p.ImageUrl
+                                })
+                        })
                     });
                 }
                 var response = new { productList, totalNumberOfProducts };
