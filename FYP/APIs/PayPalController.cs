@@ -30,11 +30,11 @@ namespace FYP.APIs
         [AllowAnonymous]
         [HttpPost("createPaypalTransaction")]
         public async Task<IActionResult> CreatePaypalTransaction([FromForm] List<UserProduct>
-            sanitiseProducts)
+            userProducts)
         {
             try
             {
-                var order = await _payPalService.createPaypalTransaction(sanitiseProducts);
+                var order = await _payPalService.createPaypalTransaction(userProducts);
               
                 FieldInfo field = typeof(BraintreeHttp.HttpResponse).GetField("result",
                        BindingFlags.NonPublic |
