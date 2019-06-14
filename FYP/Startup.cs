@@ -84,6 +84,7 @@ namespace FYP
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<IPayPalService, PayPalService>();
             services.AddScoped<IOrderHub, OrderHub>();
 
             // add amazon s3 service

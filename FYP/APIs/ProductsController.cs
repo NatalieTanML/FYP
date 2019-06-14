@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using FYP.Helpers;
 using FYP.Models;
@@ -79,6 +80,60 @@ namespace FYP.APIs
                 });
             }
             return new JsonResult(productList);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("productsByPage")]
+        public async Task<IActionResult> GetProductsByPage([FromForm] IFormCollection inFormData)
+        {
+            try
+            {
+                var pageNumber = int.Parse(inFormData["currentPage"]);
+                var pageSize = int.Parse(inFormData["productsPerPage"]);
+
+                var products = await _productService.GetByPage(pageNumber, pageSize);
+                var totalNumberOfProducts = await _productService.GetTotalNumberOfProducts();
+
+                List<object> productList = new List<object>();
+                foreach (Product product in products)
+                {
+                    productList.Add(new
+                    {
+                        productId = product.ProductId,
+                        productName = product.ProductName,
+                        price = product.Price,
+                        description = product.Description,
+                        imageWidth = product.ImageWidth,
+                        imageHeight = product.ImageHeight,
+                        discountPrice = product.DiscountPrices
+                            .Select(i => new
+                            {
+                                i.DiscountValue,
+                                i.IsPercentage
+                            }),
+                        productImages = product.ProductImages
+                            .Select(i => new
+                            {
+                                i.ImageUrl
+                            }),
+                        options = product.Options
+                            .Select(i => new
+                            {
+                                i.OptionId,
+                                i.OptionType,
+                                i.OptionValue,
+                                i.CurrentQuantity,
+                                i.MinimumQuantity
+                            })
+                    });
+                }
+                var response = new { productList, totalNumberOfProducts };
+                return new JsonResult(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [AllowAnonymous]
@@ -204,14 +259,6 @@ namespace FYP.APIs
                 throw new AppException("Unable to delete product record.", new { message = ex.Message });
             }
         }
-
-        [AllowAnonymous]
-        [HttpPost("getOrder")]
-        public async Task<IActionResult> GetPayPalOrder([FromForm] IFormCollection inFormData)
-        {
-            var orderId = inFormData["orderId"];
-            var order = await _productService.GetPayPalOrder(orderId);
-            return new JsonResult(order);
-        }
+        
     }
 }
