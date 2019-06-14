@@ -16,7 +16,6 @@ using Microsoft.Extensions.Options;
 namespace FYP.APIs
 {
     [Authorize]
-    [ApiController]
     [Route("api/[controller]")]
     public class ProductsController : Controller
     {
@@ -30,8 +29,8 @@ namespace FYP.APIs
             _appSettings = appSettings.Value;
         }
 
-        [AllowAnonymous]
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
             var products = await _productService.GetAll();
@@ -50,6 +49,7 @@ namespace FYP.APIs
                     effectiveEndDate = product.EffectiveEndDate,
                     updatedAt = product.UpdatedAt,
                     updatedById = product.UpdatedById,
+                    updatedBy = product.UpdatedBy.Name,
                     categoryId = product.CategoryId,
                     categoryName = product.Category.CategoryName,
                     discountPrice = product.DiscountPrices
@@ -61,13 +61,6 @@ namespace FYP.APIs
                             i.DiscountValue,
                             i.IsPercentage
                         }),
-                    productImages = product.ProductImages
-                        .Select(i => new
-                        {
-                            i.ProductImageId,
-                            i.ImageKey,
-                            i.ImageUrl
-                        }),
                     options = product.Options
                         .Select(i => new
                         {
@@ -75,7 +68,13 @@ namespace FYP.APIs
                             i.OptionType,
                             i.OptionValue,
                             i.CurrentQuantity,
-                            i.MinimumQuantity
+                            i.MinimumQuantity,
+                            productImages = i.ProductImages
+                                .Select(p => new {
+                                    p.ProductImageId,
+                                    p.ImageKey,
+                                    p.ImageUrl
+                                })
                         })
                 });
             }
@@ -113,13 +112,6 @@ namespace FYP.APIs
                             i.DiscountValue,
                             i.IsPercentage
                         }),
-                    productImages = product.ProductImages
-                        .Select(i => new
-                        {
-                            i.ProductImageId,
-                            i.ImageKey,
-                            i.ImageUrl
-                        }),
                     options = product.Options
                         .Select(i => new
                         {
@@ -127,62 +119,51 @@ namespace FYP.APIs
                             i.OptionType,
                             i.OptionValue,
                             i.CurrentQuantity,
-                            i.MinimumQuantity
+                            i.MinimumQuantity,
+                            productImages = i.ProductImages
+                                .Select(p => new {
+                                    p.ProductImageId,
+                                    p.ImageKey,
+                                    p.ImageUrl
+                                })
                         })
                 });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                throw new AppException("Unable to get product record.", new { message = ex.Message });
             }
-
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateProduct([FromBody] Product inProduct)
+        [AllowAnonymous]
+        public async Task<IActionResult> CreateProduct([FromBody]Product inProduct)
         {
             // get current logged in user's id
             //int currentUserId = int.Parse(User.FindFirst("userid").Value);
             int currentUserId = 4;
 
-            // create new product object to be added
-            Product newProduct = new Product()
-            {
-                ProductName = inProduct.ProductName,
-                Description = inProduct.Description,
-                Price = decimal.Parse(inProduct.Price.ToString()),
-                ImageWidth = double.Parse(inProduct.ImageWidth.ToString()),
-                ImageHeight = double.Parse(inProduct.ImageHeight.ToString()),
-                EffectiveStartDate = DateTime.ParseExact(inProduct.EffectiveStartDate.ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
-                EffectiveEndDate = DateTime.ParseExact(inProduct.EffectiveEndDate.ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now,
-                CreatedById = currentUserId,
-                UpdatedById = currentUserId,
-                DiscountPrices = inProduct.DiscountPrices,
-                // product images need to invoke another method 
-                // for image compression & upload to s3 first
-                // return the url links after upload
-                // ProductImages = inProduct.ProductImages
-                //CategoryId = int.Parse(inFormData["category"])
-            };
+            inProduct.CreatedById = currentUserId;
+            inProduct.UpdatedById = currentUserId;
 
             try
             {
                 // try add to database
-                await _productService.Create(newProduct);
+                await _productService.Create(inProduct);
                 return Ok(new
                 {
                     createSuccess = true,
-                    message = "Product created successfully!"
+                    message = "Product created successfully!",
+                    product = inProduct
                 });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                throw new AppException("Unable to create product record.", new { message = ex.Message });
             }
         }
 
+        [AllowAnonymous]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product inProduct)
         {
@@ -190,44 +171,38 @@ namespace FYP.APIs
             //int currentUserId = int.Parse(User.FindFirst("userid").Value);
             int currentUserId = 4;
 
-            Product product = new Product()
-            {
-                ProductId = id,
-                ProductName = inProduct.ProductName,
-                Description = inProduct.Description,
-                Price = decimal.Parse(inProduct.Price.ToString()),
-                ImageWidth = double.Parse(inProduct.ImageWidth.ToString()),
-                ImageHeight = double.Parse(inProduct.ImageHeight.ToString()),
-                EffectiveStartDate = DateTime.ParseExact(inProduct.EffectiveStartDate.ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
-                EffectiveEndDate = DateTime.ParseExact(inProduct.EffectiveEndDate.ToString(), "dd/MM/yyyy", CultureInfo.InvariantCulture),
-                UpdatedAt = DateTime.Now,
-                UpdatedById = currentUserId,
-                DiscountPrices = inProduct.DiscountPrices,
-                // product images need to invoke another method 
-                // for image compression & upload to s3 first
-                // return the url links after upload
-                // ProductImages = inProduct.ProductImages
-                //CategoryId = int.Parse(inFormData["category"])
-            };
-
+            inProduct.ProductId = id;
+            inProduct.UpdatedById = currentUserId;
+            
             try
             {
                 // save (excluding password update)
-                await _productService.Update(product);
-                return Ok(new { message = "Updated product details successfully!" });
+                await _productService.Update(inProduct);
+                return Ok(new {
+                    message = "Updated product details successfully!"
+                });
             }
             catch (Exception ex)
             {
                 // return error message 
-                return BadRequest(new { message = ex.Message });
+                throw new AppException("Unable to update product record.", new { message = ex.Message });
             }
         }
 
+        // technically can't delete products, only make them "expire"
+        [AllowAnonymous]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
-            await _productService.Delete(id);
-            return Ok(new { message = "Product deleted successfully." });
+            try
+            {
+                await _productService.Delete(id);
+                return Ok(new { message = "Product deleted successfully." });
+            }
+            catch (Exception ex)
+            {
+                throw new AppException("Unable to delete product record.", new { message = ex.Message });
+            }
         }
 
         [AllowAnonymous]

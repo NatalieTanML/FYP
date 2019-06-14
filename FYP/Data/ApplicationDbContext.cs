@@ -39,11 +39,17 @@ namespace FYP.Data
             //------------- User - Start -------------
 
             modelBuilder.Entity<User>()
-                .HasOne(input => input.Role)
-                .WithMany()
+                .HasOne(i => i.Role)
+                .WithMany(i => i.Users)
                 .HasForeignKey(input => input.RoleId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
+
+            modelBuilder.Entity<User>()
+                .HasOne(i => i.CreatedBy)
+                .WithMany()
+                .HasForeignKey(i => i.CreatedById)
+                .OnDelete(DeleteBehavior.SetNull);
 
             //------------- User - End -------------
 
@@ -57,15 +63,15 @@ namespace FYP.Data
 
             modelBuilder.Entity<Product>()
                 .HasOne(a => a.CreatedBy)
-                .WithOne()
-                .HasForeignKey<User>()
+                .WithMany(a => a.CreatedProducts)
+                .HasForeignKey(a => a.CreatedById)
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
 
             modelBuilder.Entity<Product>()
                 .HasOne(a => a.UpdatedBy)
-                .WithOne()
-                .HasForeignKey<User>()
+                .WithMany(a => a.UpdatedProducts)
+                .HasForeignKey(a => a.UpdatedById)
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Product>()
@@ -73,18 +79,18 @@ namespace FYP.Data
                 .WithOne(p => p.Product)
                 .HasForeignKey(p => p.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<Product>()
-                .HasMany(p => p.ProductImages)
-                .WithOne(p => p.Product)
-                .HasForeignKey(p => p.ProductId)
-                .OnDelete(DeleteBehavior.Cascade);
-
+            
             modelBuilder.Entity<Product>()
                 .HasMany(p => p.Options)
                 .WithOne(p => p.Product)
                 .HasForeignKey(p => p.ProductId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Option>()
+                .HasMany(o => o.ProductImages)
+                .WithOne(o => o.Option)
+                .HasForeignKey(o => o.OptionId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             //------------- Product - End -------------
 
@@ -92,8 +98,8 @@ namespace FYP.Data
 
             modelBuilder.Entity<Order>()
                 .HasOne(a => a.UpdatedBy)
-                .WithOne()
-                .HasForeignKey<User>()
+                .WithMany(a => a.UpdatedOrders)
+                .HasForeignKey(a => a.UpdatedById)
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Order>()
@@ -118,8 +124,8 @@ namespace FYP.Data
 
             modelBuilder.Entity<Order>()
                 .HasOne(a => a.DeliveryMan)
-                .WithMany()
-                .HasForeignKey(b => b.DeliveryManId)
+                .WithMany(a => a.Deliveries)
+                .HasForeignKey(a => a.DeliveryManId)
                 .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<Order>()
@@ -135,14 +141,27 @@ namespace FYP.Data
                 .OnDelete(DeleteBehavior.Cascade)
                 .IsRequired();
 
-            //------------- Order - End -------------
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(i => i.Option)
+                .WithMany()
+                .HasForeignKey(i => i.OptionId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired();
+
+            modelBuilder.Entity<Option>()
+                .HasOne(o => o.Product)
+                .WithMany(p => p.Options)
+                .HasForeignKey(o => o.ProductId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
 
             modelBuilder.Entity<Hotel>()
                 .HasMany(h => h.Addresses)
                 .WithOne(a => a.Hotel)
                 .HasForeignKey(a => a.HotelId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.SetNull);
 
+            //------------- Order - End -------------
         }
     }
 }

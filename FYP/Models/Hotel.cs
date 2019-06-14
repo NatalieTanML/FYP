@@ -14,6 +14,6 @@ namespace FYP.Models
         public string HotelAddress { get; set; }
         public string HotelPostalCode { get; set; }
 
-        public List<Address> Addresses { get; set; }
+        public ICollection<Address> Addresses { get; set; }
     }
 }

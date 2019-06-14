@@ -19,22 +19,18 @@ namespace FYP.Models
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
-        [ForeignKey("CreatedBy")]
         [Column("CreatedBy")]
         public int CreatedById { get; set; }
         public User CreatedBy { get; set; }
 
-        [ForeignKey("UpdatedBy")]
         [Column("UpdatedBy")]
         public int UpdatedById { get; set; }
         public User UpdatedBy { get; set; }
 
-        [ForeignKey("Category")]
         public int CategoryId { get; set; }
         public Category Category { get; set; }
 
-        public List<DiscountPrice> DiscountPrices { get; set; }
-        public List<ProductImage> ProductImages { get; set; }
-        public List<Option> Options { get; set; }
+        public ICollection<DiscountPrice> DiscountPrices { get; set; }
+        public ICollection<Option> Options { get; set; }
     }
 }

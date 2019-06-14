@@ -31,39 +31,83 @@ namespace FYP.APIs
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
-            try
+            
+            var orders = await _orderService.GetAll();
+            List<object> orderList = new List<object>();
+            foreach (Order order in orders)
             {
-                var orders = await _orderService.GetAll();
-                //List<object> orderList = new List<object>();
-                //foreach (Order order in orders)
-                //{
-                //    orderList.Add(new
-                //    {
-                //        orderId = order.OrderId,
-                //        createdAt = order.CreatedAt,
-                //        updatedAt = order.UpdatedAt,
-                //        orderSubtotal = order.OrderSubtotal,
-                //        orderTotal = order.OrderTotal,
-                //        referenceNo = order.ReferenceNo,
-                //        request = order.Request,
-                //        email = order.Email,
-                //        updatedBy = order.UpdatedBy.Name,
-                //        deliveryType = order.DeliveryType,
-                //        address = order.Address,
-                //        status = order.Status,
-                //        deliveryMan = order.DeliveryMan,
-                //        orderRecipient = order.OrderRecipient,
-                //        orderItems = order.OrderItems
-                //    });
-                //}
-                return new JsonResult(orders);
+                orderList.Add(new
+                {
+                    orderId = order.OrderId,
+                    createdAt = order.CreatedAt,
+                    updatedAt = order.UpdatedAt,
+                    orderSubtotal = order.OrderSubtotal,
+                    orderTotal = order.OrderTotal,
+                    referenceNo = order.ReferenceNo,
+                    request = order.Request,
+                    email = order.Email,
+                    updatedById = order.UpdatedById,
+                    updatedBy = order.UpdatedBy?.Name,
+                    deliveryTypeId = order.DeliveryTypeId,
+                    deliveryType = order.DeliveryType.DeliveryTypeName,
+                    addressId = order.AddressId,
+                    address = new
+                    {
+                        addressLine1 = order.Address?.AddressLine1,
+                        addressLine2 = order.Address?.AddressLine2,
+                        postalCode = order.Address?.PostalCode,
+                        unitNo = order.Address?.UnitNo,
+                        country = order.Address?.Country,
+                        state = order.Address?.State,
+                        hotelId = order.Address?.HotelId,
+                        hotel = new
+                        {
+                            hotelName = order.Address?.Hotel?.HotelName,
+                            hotelAddress = order.Address?.Hotel?.HotelAddress,
+                            hotelPostalCode = order.Address?.Hotel?.HotelPostalCode
+                        }
+                    },
+                    statusId = order.StatusId,
+                    status = order.Status.StatusName,
+                    deliveryManId = order.DeliveryManId,
+                    deliveryMan = (new
+                    {
+                        name = order.DeliveryMan?.Name,
+                        email = order.DeliveryMan?.Email
+                    }),
+                    orderRecipientId = order.OrderRecipientId,
+                    orderRecipient = (new
+                    {
+                        receivedBy = order.OrderRecipient?.ReceivedBy,
+                        receivedAt = order.OrderRecipient?.ReceivedAt,
+                        recipientSignature = order.OrderRecipient?.RecipientSignature,
+                    }),
+                    orderItems = order.OrderItems
+                        .Select(i => new
+                        {
+                            i.OrderItemId,
+                            i.Quantity,
+                            i.OrderImageUrl,
+                            i.OptionId,
+                            options = (new
+                            {
+                                optionId = i.Option.OptionId,
+                                optionType = i.Option.OptionType,
+                                optionValue = i.Option.OptionValue,
+                                product = (new
+                                {
+                                    productId = i.Option.Product.ProductId,
+                                    productName = i.Option.Product.ProductName,
+                                    price = i.Option.Product.Price
+                                })
+                            })
+                        })
+                });
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return new JsonResult(orderList);
         }
 
         [HttpGet("{id}")]
@@ -73,11 +117,102 @@ namespace FYP.APIs
             {
                 var order = await _orderService.GetById(id);
 
-                return Ok(order);
+                return Ok(new
+                {
+                    orderId = order.OrderId,
+                    createdAt = order.CreatedAt,
+                    updatedAt = order.UpdatedAt,
+                    orderSubtotal = order.OrderSubtotal,
+                    orderTotal = order.OrderTotal,
+                    referenceNo = order.ReferenceNo,
+                    request = order.Request,
+                    email = order.Email,
+                    updatedById = order.UpdatedById,
+                    updatedBy = order.UpdatedBy?.Name,
+                    deliveryTypeId = order.DeliveryTypeId,
+                    deliveryType = order.DeliveryType.DeliveryTypeName,
+                    addressId = order.AddressId,
+                    address = new
+                    {
+                        addressLine1 = order.Address?.AddressLine1,
+                        addressLine2 = order.Address?.AddressLine2,
+                        postalCode = order.Address?.PostalCode,
+                        unitNo = order.Address?.UnitNo,
+                        country = order.Address?.Country,
+                        state = order.Address?.State,
+                        hotelId = order.Address?.HotelId,
+                        hotel = new
+                        {
+                            hotelName = order.Address?.Hotel?.HotelName,
+                            hotelAddress = order.Address?.Hotel?.HotelAddress,
+                            hotelPostalCode = order.Address?.Hotel?.HotelPostalCode
+                        }
+                    },
+                    statusId = order.StatusId,
+                    status = order.Status.StatusName,
+                    deliveryManId = order.DeliveryManId,
+                    deliveryMan = (new
+                    {
+                        name = order.DeliveryMan?.Name,
+                        email = order.DeliveryMan?.Email
+                    }),
+                    orderRecipientId = order.OrderRecipientId,
+                    orderRecipient = (new
+                    {
+                        receivedBy = order.OrderRecipient?.ReceivedBy,
+                        receivedAt = order.OrderRecipient?.ReceivedAt,
+                        recipientSignature = order.OrderRecipient?.RecipientSignature,
+                    }),
+                    orderItems = order.OrderItems
+                        .Select(i => new
+                        {
+                            i.OrderItemId,
+                            i.Quantity,
+                            i.OrderImageUrl,
+                            i.OptionId,
+                            options = (new
+                            {
+                                optionId = i.Option.OptionId,
+                                optionType = i.Option.OptionType,
+                                optionValue = i.Option.OptionValue,
+                                product = (new
+                                {
+                                    productId = i.Option.Product.ProductId,
+                                    productName = i.Option.Product.ProductName,
+                                    price = i.Option.Product.Price
+                                })
+                            })
+                        })
+                });
             }
             catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> CreateOrder([FromBody]Order inOrder)
+        {
+            // get current logged in user's id
+            //int currentUserId = int.Parse(User.FindFirst("userid").Value);
+            //int currentUserId = 4;
+
+            try
+            {
+                // try add to database
+                await _orderService.Create(inOrder);
+                return Ok(new
+                {
+                    createSuccess = true,
+                    message = "Order created successfully!",
+                    order = inOrder
+                });
+            }
+            catch (Exception ex)
+            {
+                throw new AppException("Unable to create order record.", new { message = ex.Message });
             }
         }
 

@@ -18,13 +18,16 @@ namespace FYP.Models
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
-        [ForeignKey("CreatedBy")]
         [Column("CreatedBy")]
         public int? CreatedById { get; set; }
         public User CreatedBy { get; set; }
-
-        [ForeignKey("Role")]
+        
         public int RoleId { get; set; }
         public Role Role { get; set; }
+
+        public ICollection<Order> UpdatedOrders { get; set; }
+        public ICollection<Order> Deliveries { get; set; }
+        public ICollection<Product> CreatedProducts { get; set; }
+        public ICollection<Product> UpdatedProducts { get; set; }
     }
 }

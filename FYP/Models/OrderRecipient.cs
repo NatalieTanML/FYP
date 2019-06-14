@@ -12,6 +12,6 @@ namespace FYP.Models
         public byte[] RecipientSignature { get; set; }
         public DateTime ReceivedAt { get; set; }
 
-        public List<Order> Orders { get; set; }
+        public ICollection<Order> Orders { get; set; }
     }
 }

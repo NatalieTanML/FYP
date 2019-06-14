@@ -12,15 +12,9 @@ namespace FYP.Models
         public int Quantity { get; set; }
         public string OrderImageUrl { get; set; }
 
-        [ForeignKey("Order")]
         public int OrderId { get; set; }
         public Order Order { get; set; }
-
-        [ForeignKey("Product")]
-        public int ProductId { get; set; }
-        public Product Product { get; set; }
-
-        [ForeignKey("Option")]
+        
         public int OptionId { get; set; }
         public Option Option { get; set; }
     }

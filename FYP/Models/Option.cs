@@ -11,13 +11,15 @@ namespace FYP.Models
     {
         [Key]
         public int OptionId { get; set; }
+        public string SKUNumber { get; set; }
         public string OptionType { get; set; }
         public string OptionValue { get; set; }
         public int CurrentQuantity { get; set; }
         public int MinimumQuantity { get; set; }
 
-        [ForeignKey("Product")]
         public int ProductId { get; set; }
         public Product Product { get; set; }
+
+        public ICollection<ProductImage> ProductImages { get; set; }
     }
 }

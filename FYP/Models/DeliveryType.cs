@@ -10,6 +10,6 @@ namespace FYP.Models
         public int DeliveryTypeId { get; set; }
         public string DeliveryTypeName { get; set; }
 
-        public List<Order> Orders { get; set; }
+        public ICollection<Order> Orders { get; set; }
     }
 }
