@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using FYP.Helpers;
 using FYP.Models;
@@ -34,52 +35,113 @@ namespace FYP.APIs
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var products = await _productService.GetAll();
-            List<object> productList = new List<object>();
-            foreach (Product product in products)
+            try
             {
-                productList.Add(new
+                var products = await _productService.GetAll();
+                List<object> productList = new List<object>();
+                foreach (Product product in products)
                 {
-                    productId = product.ProductId,
-                    productName = product.ProductName,
-                    price = product.Price,
-                    description = product.Description,
-                    imageWidth = product.ImageWidth,
-                    imageHeight = product.ImageHeight,
-                    effectiveStartDate = product.EffectiveStartDate,
-                    effectiveEndDate = product.EffectiveEndDate,
-                    updatedAt = product.UpdatedAt,
-                    updatedById = product.UpdatedById,
-                    categoryId = product.CategoryId,
-                    categoryName = product.Category.CategoryName,
-                    discountPrice = product.DiscountPrices
-                        .Select(i => new
-                        {
-                            i.DiscountPriceId,
-                            i.EffectiveStartDate,
-                            i.EffectiveEndDate,
-                            i.DiscountValue,
-                            i.IsPercentage
-                        }),
-                    productImages = product.ProductImages
-                        .Select(i => new
-                        {
-                            i.ProductImageId,
-                            i.ImageKey,
-                            i.ImageUrl
-                        }),
-                    options = product.Options
-                        .Select(i => new
-                        {
-                            i.OptionId,
-                            i.OptionType,
-                            i.OptionValue,
-                            i.CurrentQuantity,
-                            i.MinimumQuantity
-                        })
-                });
+                    productList.Add(new
+                    {
+                        productId = product.ProductId,
+                        productName = product.ProductName,
+                        price = product.Price,
+                        description = product.Description,
+                        imageWidth = product.ImageWidth,
+                        imageHeight = product.ImageHeight,
+                        effectiveStartDate = product.EffectiveStartDate,
+                        effectiveEndDate = product.EffectiveEndDate,
+                        updatedAt = product.UpdatedAt,
+                        updatedById = product.UpdatedById,
+                        categoryId = product.CategoryId,
+                        categoryName = product.Category.CategoryName,
+                        discountPrice = product.DiscountPrices
+                            .Select(i => new
+                            {
+                                i.DiscountPriceId,
+                                i.EffectiveStartDate,
+                                i.EffectiveEndDate,
+                                i.DiscountValue,
+                                i.IsPercentage
+                            }),
+                        productImages = product.ProductImages
+                            .Select(i => new
+                            {
+                                i.ProductImageId,
+                                i.ImageKey,
+                                i.ImageUrl
+                            }),
+                        options = product.Options
+                            .Select(i => new
+                            {
+                                i.OptionId,
+                                i.OptionType,
+                                i.OptionValue,
+                                i.CurrentQuantity,
+                                i.MinimumQuantity
+                            })
+                    });
+                }
+                return new JsonResult(productList);
             }
-            return new JsonResult(productList);
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("productsByPage")]
+        public async Task<IActionResult> GetProductsByPage([FromForm] IFormCollection inFormData)
+        {
+            try
+            {
+                var pageNumber = int.Parse(inFormData["currentPage"]);
+                var pageSize = int.Parse(inFormData["productsPerPage"]);
+
+                var products = await _productService.GetByPage(pageNumber, pageSize);
+                var totalNumberOfProducts = await _productService.GetTotalNumberOfProducts();
+
+                List<object> productList = new List<object>();
+                foreach (Product product in products)
+                {
+                    productList.Add(new
+                    {
+                        productId = product.ProductId,
+                        productName = product.ProductName,
+                        price = product.Price,
+                        description = product.Description,
+                        imageWidth = product.ImageWidth,
+                        imageHeight = product.ImageHeight,
+                        discountPrice = product.DiscountPrices
+                            .Select(i => new
+                            {
+                                i.DiscountValue,
+                                i.IsPercentage
+                            }),
+                        productImages = product.ProductImages
+                            .Select(i => new
+                            {
+                                i.ImageUrl
+                            }),
+                        options = product.Options
+                            .Select(i => new
+                            {
+                                i.OptionId,
+                                i.OptionType,
+                                i.OptionValue,
+                                i.CurrentQuantity,
+                                i.MinimumQuantity
+                            })
+                    });
+                }
+                var response = new { productList, totalNumberOfProducts };
+                return new JsonResult(response);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [AllowAnonymous]
@@ -228,15 +290,6 @@ namespace FYP.APIs
         {
             await _productService.Delete(id);
             return Ok(new { message = "Product deleted successfully." });
-        }
-
-        [AllowAnonymous]
-        [HttpPost("getOrder")]
-        public async Task<IActionResult> GetPayPalOrder([FromForm] IFormCollection inFormData)
-        {
-            var orderId = inFormData["orderId"];
-            var order = await _productService.GetPayPalOrder(orderId);
-            return new JsonResult(order);
         }
     }
 }

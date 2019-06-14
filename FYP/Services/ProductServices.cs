@@ -5,28 +5,22 @@ using FYP.Models;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using PayPalCheckoutSdk.Orders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
-//1. Import the PayPal SDK client that was created in `Set up Server-Side SDK`.
-using BraintreeHttp;
-using PayPalCheckoutSdk.Core;
-using PayPalCheckoutSdk.Orders;
 
 namespace FYP.Services
 {
     public interface IProductService
     {
         Task<IEnumerable<Product>> GetAll();
+        Task<IEnumerable<Product>> GetByPage(int pageNumber, int productsPerPage);
+        Task<int> GetTotalNumberOfProducts();
         Task<Product> GetById(int id);
         Task<Product> Create(Product product);
         Task Update(Product productParam);
         Task Delete(int id);
-        Task<HttpResponse> GetPayPalOrder(String orderId);
-        Task<IEnumerable<Product>> GetUserCart(List<int>productid);
     }
 
     public class ProductService : IProductService
@@ -49,6 +43,23 @@ namespace FYP.Services
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
                 .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Product>> GetByPage(int pageNumber, int productsPerPage)
+        {
+            return await _context.Products
+                .Skip((pageNumber - 1) * productsPerPage)
+                .Take(productsPerPage)
+                .Include(product => product.Category)
+                .Include(product => product.ProductImages)
+                .Include(product => product.DiscountPrices)
+                .Include(product => product.Options)
+                .ToListAsync();
+        }
+
+        public async Task<int> GetTotalNumberOfProducts()
+        {
+            return await _context.Products.CountAsync();
         }
 
         public async Task<Product> GetById(int id)
@@ -119,48 +130,6 @@ namespace FYP.Services
                         throw new AppException("Unable to delete product record.");
                 }
             }
-        }
-
-        public async Task<HttpResponse> GetPayPalOrder(string orderId)
-        {
-            OrdersGetRequest request = new OrdersGetRequest(orderId);
-            //3. Call PayPal to get the transaction
-            var response = await PayPalClient.client().Execute(request);
-            //4. Save the transaction in your database. Implement logic to save transaction to your database for future reference.
-            var result = response.Result<PayPalCheckoutSdk.Orders.Order>();
-            Console.WriteLine("Retrieved Order Status");
-            Console.WriteLine("Status: {0}", result.Status);
-            Console.WriteLine("Order Id: {0}", result.Id);
-            Console.WriteLine("Intent: {0}", result.Intent);
-            Console.WriteLine("Links:");
-            foreach (LinkDescription link in result.Links)
-            {
-                Console.WriteLine("\t{0}: {1}\tCall Type: {2}", link.Rel, link.Href, link.Method);
-            }
-            AmountWithBreakdown amount = result.PurchaseUnits[0].Amount;
-            Console.WriteLine("Total Amount: {0} {1}", amount.CurrencyCode, amount.Value);
-
-            return response;
-        }
-
-        //public async Task<IEnumerable<Product>> getusercart(int[] productid)
-        //{
-        //    //https://stackoverflow.com/questions/5624614/get-a-list-of-elements-by-their-id-in-entity-framework
-        //    //https://stackoverflow.com/questions/16824510/select-multiple-records-based-on-list-of-ids-with-linq
-
-        //    // var idlist = new int[1, 2, 2, 2, 2]; // same user is selected 4 times
-        //    //var userprofiles = _datacontext.userprofile.where(e => idlist.contains(e)).tolist();
-        //    //var roles = db.roles.where(r => user.roles.contains(r.roleid));
-
-        //    // returns full list of products based on productid including join with category table
-        //    //return await _context.products.include(product => product.category).tolistasync();
-
-        //    return await _context.Products.Where(p => productid.Contains(p.ProductId)).ToList();
-        //}
-
-        public async Task<IEnumerable<Product>> GetUserCart(List<int> productid)
-        {
-            return await _context.Products.Where(product => productid.Contains(product.ProductId)).ToListAsync();
         }
     }
 }
