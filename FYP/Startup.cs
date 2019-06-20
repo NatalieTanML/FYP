@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Amazon.S3;
 using FYP.Data;
 using FYP.Helpers;
+using FYP.Hubs;
 using FYP.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -39,7 +41,12 @@ namespace FYP
             });
 
             services.AddCors();
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddMvc()
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
+                .AddJsonOptions(
+                    options => options.SerializerSettings.ReferenceLoopHandling =
+                    Newtonsoft.Json.ReferenceLoopHandling.Ignore
+                ) ;
             services.AddDbContextPool<ApplicationDbContext>(
                 options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"))
             );
@@ -69,11 +76,21 @@ namespace FYP
                 };
             });
 
+            // add signalr service
+            services.AddSignalR();
+
             // configure DI for application services
-            // TODO: Add new scoped services each time you create a new controller & service
+            // TODO: Add new services each time you create a new controller & service
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IProductService, ProductService>();
+            services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<IPayPalService, PayPalService>();
+            services.AddScoped<IOrderHub, OrderHub>();
             services.AddScoped<IHotelService, HotelService>();
+
+            // add amazon s3 service
+            services.AddSingleton<IS3Service, S3Service>();
+            services.AddAWSService<IAmazonS3>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -99,12 +116,17 @@ namespace FYP
                 .AllowAnyHeader());
 
             app.UseAuthentication();
-
+            
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
+            });
+
+            app.UseSignalR(route =>
+            {
+                route.MapHub<OrderHub>("/order-hub");
             });
         }
     }

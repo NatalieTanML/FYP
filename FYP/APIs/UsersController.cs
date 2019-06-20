@@ -40,10 +40,10 @@ namespace FYP.APIs
         {
             User newUser = new User()
             {
-                Username = inFormData["username"],
+                Email = inFormData["username"],
                 RoleId = 1,
                 CreatedAt = DateTime.Now,
-                CreatedBy = 4,
+                CreatedById = 4,
                 IsEnabled = true,
                 ChangePassword = false,
 
@@ -99,7 +99,7 @@ namespace FYP.APIs
                 user = new
                 {
                     userId = user.UserId,
-                    userName = user.Username,
+                    email = user.Email,
                     isEnabled = user.IsEnabled,
                     changePassword = user.ChangePassword
                 },
@@ -118,7 +118,7 @@ namespace FYP.APIs
                 {
                     userId = user.UserId,
                     roleName = user.Role.RoleName,
-                    email = user.Username,
+                    email = user.Email,
                     isEnabled = user.IsEnabled,
                     changePassword = user.ChangePassword
                 });
@@ -133,7 +133,7 @@ namespace FYP.APIs
             return Ok(new
             {
                 id = user.UserId,
-                username = user.Username
+                email = user.Email
             });
         }
 
@@ -159,7 +159,7 @@ namespace FYP.APIs
             {
                 ChangePassword = true,
                 UserId = id,
-                Username = inFormData["username"]
+                Email = inFormData["username"]
                 // update with disabled/not disabled
             };
             string password = inFormData["password"];

@@ -9,5 +9,7 @@ namespace FYP.Models
     {
         public int StatusId { get; set; }
         public string StatusName { get; set; }
+
+        public ICollection<Order> Orders { get; set; }
     }
 }

@@ -1,5 +1,4 @@
-﻿    
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -17,8 +16,9 @@ namespace FYP.Models
         public string Country { get; set; }
         public string State { get; set; }
 
-        [ForeignKey("Hotel")]
-        public int HotelId { get; set; }
+        public ICollection<Order> Orders { get; set; }
+
+        public int? HotelId { get; set; }
         public Hotel Hotel { get; set; }
     }
 }

@@ -16,7 +16,7 @@ namespace FYP.Services
     {
         Task<IEnumerable<User>> GetAll();
         Task<User> GetById(int id);
-        Task<User> Authenticate(string username, string password);
+        Task<User> Authenticate(string email, string password);
         Task<User> Create(User user);
         Task Update(User user, string password);
         Task Delete(int id);
@@ -43,13 +43,13 @@ namespace FYP.Services
             return await _context.Users.Include(user => user.Role).FirstOrDefaultAsync(u => u.UserId == id);
         }
 
-        public async Task<User> Authenticate(string inUsername, string inPassword)
+        public async Task<User> Authenticate(string inEmail, string inPassword)
         {
-            if (string.IsNullOrWhiteSpace(inUsername) || string.IsNullOrWhiteSpace(inPassword))
+            if (string.IsNullOrWhiteSpace(inEmail) || string.IsNullOrWhiteSpace(inPassword))
                 return null;
 
             // Check if there is matching username info first
-            var user = await _context.Users.Include(u => u.Role).SingleOrDefaultAsync(x => x.Username == inUsername);
+            var user = await _context.Users.Include(u => u.Role).SingleOrDefaultAsync(x => x.Email == inEmail);
             if (user == null)
                 return null;
 
@@ -69,8 +69,8 @@ namespace FYP.Services
             // If the user name (email) already exists, raise an exception
             // so that the Web API controller class code can capture the error and
             // send back a JSON response to the client side.
-            if (await _context.Users.AnyAsync(u => u.Username == user.Username))
-                throw new AppException("Username " + user.Username + " is already taken");
+            if (await _context.Users.AnyAsync(u => u.Email == user.Email))
+                throw new AppException("Email " + user.Email + " is already in use");
 
 
             //Generate random string for password.
@@ -91,7 +91,7 @@ namespace FYP.Services
 
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("WY", "weiyang35@hotmail.com"));
-            message.To.Add(new MailboxAddress("WY", user.Username));
+            message.To.Add(new MailboxAddress("WY", user.Email));
             message.Subject = "Registration successful";
             message.Body = new TextPart("plain")
             {
@@ -138,11 +138,11 @@ namespace FYP.Services
             if (user == null)
                 throw new AppException("User not found.");
 
-            if (userParam.Username != user.Username)
+            if (userParam.Email != user.Email)
             {
                 // username has changed, check if new username is taken
-                if (await _context.Users.AnyAsync(x => x.Username == userParam.Username))
-                    throw new AppException("Username " + userParam.Username + " is already taken.");
+                if (await _context.Users.AnyAsync(x => x.Email == userParam.Email))
+                    throw new AppException("Email " + userParam.Email + " is already in use.");
             }
 
             // update user properties
