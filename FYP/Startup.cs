@@ -73,6 +73,7 @@ namespace FYP
             // TODO: Add new scoped services each time you create a new controller & service
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IProductService, ProductService>();
+            services.AddScoped<IHotelService, HotelService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

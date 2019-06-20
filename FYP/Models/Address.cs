@@ -1,5 +1,7 @@
-﻿using System;
+﻿    
+using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -14,6 +16,9 @@ namespace FYP.Models
         public string UnitNo { get; set; }
         public string Country { get; set; }
         public string State { get; set; }
-        public string HotelName { get; set; }
+
+        [ForeignKey("Hotel")]
+        public int HotelId { get; set; }
+        public Hotel Hotel { get; set; }
     }
 }

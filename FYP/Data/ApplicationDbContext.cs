@@ -17,6 +17,7 @@ namespace FYP.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<Product> Products { get; set; }
+        public DbSet<Hotel> Hotels { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -47,6 +48,12 @@ namespace FYP.Data
                 .HasForeignKey(input => input.UpdatedBy)
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
+
+            modelBuilder.Entity<Hotel>()
+               .HasMany(h => h.Addresses)
+               .WithOne(a => a.Hotel)
+                .HasForeignKey(a => a.HotelId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
