@@ -86,7 +86,7 @@ namespace FYP.Services
          */
         private static OrderRequest BuildRequestBody(List<UserProduct> userProductList, decimal totalPrice)
         {
-            List<Item> lineItems = setLineItems(userProductList);
+            List<Item> lineItems = SetLineItems(userProductList);
 
             OrderRequest orderRequest = new OrderRequest()
             {
@@ -145,7 +145,7 @@ namespace FYP.Services
             return orderRequest;
         }
 
-        private static List<Item> setLineItems(List<UserProduct> userProductList)
+        private static List<Item> SetLineItems(List<UserProduct> userProductList)
         {
             List<Item> lineItemList = new List<Item>();
             foreach (var userProduct in userProductList)
