@@ -19,22 +19,25 @@ namespace FYP.APIs
     public class PayPalController : Controller
     {
         private IPayPalService _payPalService;
+        private readonly OrdersController _ordersController;
         private readonly AppSettings _appSettings;
 
-        public PayPalController(IPayPalService payPalService, IOptions<AppSettings> appSettings)
+        public PayPalController(IPayPalService payPalService, 
+            IOptions<AppSettings> appSettings, 
+            OrdersController ordersController)
         {
             _payPalService = payPalService;
+            _ordersController = ordersController;
             _appSettings = appSettings.Value;
         }
 
         [AllowAnonymous]
         [HttpPost("createPaypalTransaction")]
-        public async Task<IActionResult> CreatePaypalTransaction([FromForm] List<UserProduct>
-            userProducts)
+        public async Task<IActionResult> CreatePaypalTransaction([FromForm] List<UserProduct> userProducts)
         {
             try
             {
-                var order = await _payPalService.createPaypalTransaction(userProducts);
+                var order = await _payPalService.CreatePaypalTransaction(userProducts);
               
                 FieldInfo field = typeof(BraintreeHttp.HttpResponse).GetField("result",
                        BindingFlags.NonPublic |

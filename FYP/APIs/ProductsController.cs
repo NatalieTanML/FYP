@@ -21,12 +21,16 @@ namespace FYP.APIs
     public class ProductsController : Controller
     {
         private IProductService _productService;
+        private readonly IS3Service _s3Service;
         //private IUserService _userService;
         private readonly AppSettings _appSettings;
 
-        public ProductsController(IProductService productService, IOptions<AppSettings> appSettings)
+        public ProductsController(IProductService productService, 
+            IS3Service s3Service, 
+            IOptions<AppSettings> appSettings)
         {
             _productService = productService;
+            _s3Service = s3Service;
             _appSettings = appSettings.Value;
         }
 
@@ -191,6 +195,26 @@ namespace FYP.APIs
             }
         }
 
+        //[HttpPost]
+        //[Route("uploadFiles")]
+        //[AllowAnonymous]
+        //public async Task<IActionResult> UploadImages(ICollection<IFormFile> files)
+        //{
+        //    try
+        //    {
+        //        await _s3Service.UploadImagesAsync(files);
+        //        return Ok(new
+        //        {
+        //            uploadSuccess = true,
+        //            message = "Uploaded images successfully!"
+        //        });
+        //    } 
+        //    catch (Exception ex)
+        //    {
+        //        throw new AppException("Unable to create product record.", new { message = ex.Message });
+        //    }
+        //}
+
         [HttpPost]
         [AllowAnonymous]
         public async Task<IActionResult> CreateProduct([FromBody]Product inProduct)
@@ -205,12 +229,12 @@ namespace FYP.APIs
             try
             {
                 // try add to database
-                await _productService.Create(inProduct);
+                Product newProduct = await _productService.Create(inProduct);
                 return Ok(new
                 {
                     createSuccess = true,
                     message = "Product created successfully!",
-                    product = inProduct
+                    product = newProduct
                 });
             }
             catch (Exception ex)

@@ -15,7 +15,7 @@ namespace FYP.Services
     public interface IPayPalService
     {
         Task<Product> VerifyUserCart(UserProduct userProduct);
-        Task<HttpResponse> createPaypalTransaction(List<UserProduct> sanitiseProducts);
+        Task<HttpResponse> CreatePaypalTransaction(List<UserProduct> sanitiseProducts);
         Task<HttpResponse> CapturePaypalTransaction(String orderId);
     }
 
@@ -36,7 +36,7 @@ namespace FYP.Services
                FirstOrDefaultAsync(p => p.ProductId == userProduct.ProductId);
         }
 
-        public async Task<HttpResponse> createPaypalTransaction(List<UserProduct> userProducts)
+        public async Task<HttpResponse> CreatePaypalTransaction(List<UserProduct> userProducts)
         {
             List<Task<Product>> productTasks = new List<Task<Product>>();
             foreach (var userProduct in userProducts)
@@ -63,7 +63,7 @@ namespace FYP.Services
             request.Prefer("return=representation");
             request.RequestBody(BuildRequestBody(userProductList, totalPrice));
             //3. Call PayPal to set up a transaction
-            var response = await PayPalClient.client().Execute(request);
+            var response = await PayPalClient.Client().Execute(request);
 
             var result = response.Result<PayPalCheckoutSdk.Orders.Order>();
             Console.WriteLine("Status: {0}", result.Status);
@@ -86,7 +86,7 @@ namespace FYP.Services
          */
         private static OrderRequest BuildRequestBody(List<UserProduct> userProductList, decimal totalPrice)
         {
-            List<Item> lineItems = setLineItems(userProductList);
+            List<Item> lineItems = SetLineItems(userProductList);
 
             OrderRequest orderRequest = new OrderRequest()
             {
@@ -100,52 +100,51 @@ namespace FYP.Services
                     ShippingPreference = "SET_PROVIDED_ADDRESS"
                 },
                 PurchaseUnits = new List<PurchaseUnitRequest>
-        {
-
-          new PurchaseUnitRequest{
-            ReferenceId =  "PUHF",
-            Description = "Customisable Goods",
-            CustomId = "CUST-HighFashions",
-            SoftDescriptor = "HighFashions",
-            Amount = new AmountWithBreakdown
-            {
-              CurrencyCode = "SGD",
-              Value = totalPrice.ToString(),
-              Breakdown = new AmountBreakdown
-              {
-                ItemTotal = new Money
                 {
-                  CurrencyCode = "SGD",
-                  Value = totalPrice.ToString()
-                },
-              }
-            },
 
-            Items = lineItems,
+                    new PurchaseUnitRequest{
+                    ReferenceId =  "PUHF",
+                    Description = "Customisable Goods",
+                    CustomId = "CUST-HighFashions",
+                    SoftDescriptor = "HighFashions",
+                    Amount = new AmountWithBreakdown
+                    {
+                        CurrencyCode = "SGD",
+                        Value = totalPrice.ToString(),
+                        Breakdown = new AmountBreakdown
+                        {
+                            ItemTotal = new Money
+                            {
+                                CurrencyCode = "SGD",
+                                Value = totalPrice.ToString()
+                            },
+                        }
+                    },
+                    Items = lineItems,
 
-             Shipping = new ShippingDetails
-            {
-              Name = new Name
-              {
-                FullName = "John Doe"
-              },
-              AddressPortable = new AddressPortable
-              {
-                AddressLine1 = "123 Townsend St",
-                AddressLine2 = "Floor 6",
-                AdminArea2 = "San Francisco",
-                AdminArea1 = "CA",
-                PostalCode = "94107",
-                CountryCode = "US"
-              }
+                    Shipping = new ShippingDetails
+                    {
+                        Name = new Name
+                        {
+                            FullName = "John Doe"
+                        },
+                        AddressPortable = new AddressPortable
+                        {
+                            AddressLine1 = "123 Townsend St",
+                            AddressLine2 = "Floor 6",
+                            AdminArea2 = "San Francisco",
+                            AdminArea1 = "CA",
+                            PostalCode = "94107",
+                            CountryCode = "US"
+                        }
+                    }
+                }
             }
-        }
-    }
-            };
+        };
             return orderRequest;
         }
 
-        private static List<Item> setLineItems(List<UserProduct> userProductList)
+        private static List<Item> SetLineItems(List<UserProduct> userProductList)
         {
             List<Item> lineItemList = new List<Item>();
             foreach (var userProduct in userProductList)
@@ -173,7 +172,7 @@ namespace FYP.Services
             request.Prefer("return=representation");
             request.RequestBody(new OrderActionRequest());
             // 3. Call PayPal to capture an order
-            var response = await PayPalClient.client().Execute(request);
+            var response = await PayPalClient.Client().Execute(request);
             // 4. Save the capture ID to your database. Implement logic
             // to save capture to your database for future reference.      
             var result = response.Result<PayPalCheckoutSdk.Orders.Order>();

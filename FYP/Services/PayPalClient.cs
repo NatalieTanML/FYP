@@ -17,7 +17,7 @@ namespace FYP.Services
                Set up PayPal environment with sandbox credentials.
                In production, use ProductionEnvironment.
             */
-        public static PayPalEnvironment environment()
+        public static PayPalEnvironment Environment()
         {
             var builder = new ConfigurationBuilder().SetBasePath
                 (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
@@ -29,14 +29,14 @@ namespace FYP.Services
         /**
             Returns PayPalHttpClient instance to invoke PayPal APIs.
          */
-        public static HttpClient client()
+        public static HttpClient Client()
         {
-            return new PayPalHttpClient(environment());
+            return new PayPalHttpClient(Environment());
         }
 
-        public static HttpClient client(string refreshToken)
+        public static HttpClient Client(string refreshToken)
         {
-            return new PayPalHttpClient(environment(), refreshToken);
+            return new PayPalHttpClient(Environment(), refreshToken);
         }
 
         /**

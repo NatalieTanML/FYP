@@ -21,7 +21,7 @@ namespace FYP.Services
 
 
             //3. Call PayPal to get the transaction
-            var response = await PayPalClient.client().Execute(request);
+            var response = await PayPalClient.Client().Execute(request);
             //4. Save the transaction in your database. Implement logic to save transaction to your database for future reference.
             var result = response.Result<Order>();
             Debug.WriteLine("Retrieved Order Status");

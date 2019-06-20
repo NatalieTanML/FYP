@@ -28,7 +28,7 @@ namespace FYP.Services
         Task<IEnumerable<Order>> GetAll();
         Task<Order> GetById(int id);
         Task<Order> Create(Order order);
-        Task UpdateStatus(int userId, Order inOrder);
+        Task UpdateStatus(int userId, int updatedById, int newStatus);
     }
 
     public class OrderService : IOrderService
@@ -41,7 +41,8 @@ namespace FYP.Services
 
         private const string bucketName = "20190507test1";
         private const string FileName = "image3.jpg";
-
+        private readonly string encryptionKey;
+        
         public OrderService(ApplicationDbContext context, 
             IOrderHub orderHub, 
             IOptions<AppSettings> appSettings,
@@ -53,11 +54,14 @@ namespace FYP.Services
             _appSettings = appSettings.Value;
             _client = client;
             _configuration = configuration;
+
+            // get encryption key for email
+            encryptionKey = _configuration.GetValue<string>("Encryption:Key");
         }
 
         public async Task<IEnumerable<Order>> GetAll()
         {
-            return await _context.Orders
+            List<Order> orders = await _context.Orders
                 .Include(o => o.UpdatedBy)
                 .Include(o => o.DeliveryType)
                 .Include(o => o.Address)
@@ -69,11 +73,18 @@ namespace FYP.Services
                 .ThenInclude(o => o.Option)
                 .ThenInclude(o => o.Product)
                 .ToListAsync();
+
+            foreach (Order order in orders)
+            {
+                order.EmailString = DecryptString(order.Email, encryptionKey);
+            }
+
+            return orders;
         }
 
         public async Task<Order> GetById(int id)
         {
-            return await _context.Orders
+            var order = await _context.Orders
                 .Include(o => o.UpdatedBy)
                 .Include(o => o.DeliveryType)
                 .Include(o => o.Address)
@@ -85,6 +96,10 @@ namespace FYP.Services
                 .ThenInclude(o => o.Option)
                 .ThenInclude(o => o.Product)
                 .FirstOrDefaultAsync(o => o.OrderId == id);
+
+            order.EmailString = DecryptString(order.Email, encryptionKey);
+
+            return order;
         }
 
         public async Task<Order> Create(Order order)
@@ -97,12 +112,9 @@ namespace FYP.Services
                 // put the new images url into object
                 foreach (OrderItem item in order.OrderItems)
                 {
-                    item.OrderImageUrl = "new url";
+                    item.OrderImageUrl = "https://20190507test1.s3-ap-southeast-1.amazonaws.com/" + "image5" + ".jpg";
                 }
-
-                // get encryption key for email
-                string encryptionKey = _configuration.GetValue<string>("Encryption:Key");
-
+                
                 // create new order object to be added
                 Order newOrder = new Order()
                 {
@@ -110,7 +122,7 @@ namespace FYP.Services
                     UpdatedAt = DateTime.Now,
                     OrderSubtotal = decimal.Parse(order.OrderSubtotal.ToString()),
                     OrderTotal = decimal.Parse(order.OrderTotal.ToString()),
-                    ReferenceNo = "12345678", // to be generated
+                    ReferenceNo = order.ReferenceNo,
                     Request = order.Request,
                     Email = EncryptString(order.EmailString, encryptionKey),
                     UpdatedById = order.UpdatedById,
@@ -134,7 +146,7 @@ namespace FYP.Services
             }
         }
 
-        public async Task UpdateStatus(int id, Order inOrder)
+        public async Task UpdateStatus(int id, int updatedById, int newStatus)
         {
             var order = await _context.Orders.FindAsync(id);
 
@@ -143,10 +155,19 @@ namespace FYP.Services
                 throw new AppException("Order not found.");
 
             // update product status
-            //order.Status = inOrder.Status;
-            order.StatusId = inOrder.StatusId;
+            //switch(newStatus)
+            //{
+            //    // status "Awaiting Printing"
+            //    case 2:
+            //        order.StatusId = newStatus;
+            //        break;
+            //    // status "Printed"
+            //    case 3:
+            //        order.StatusId = newStatus
+            //}
+            
             order.UpdatedAt = DateTime.Now;
-            order.UpdatedById = inOrder.UpdatedById;
+            order.UpdatedById = updatedById;
 
             _context.Orders.Update(order);
             await _context.SaveChangesAsync();
@@ -186,9 +207,9 @@ namespace FYP.Services
             }
         }
 
-        public static string DecryptString(string cipherText, string keyString)
+        public static string DecryptString(byte[] cipherText, string keyString)
         {
-            var fullCipher = Convert.FromBase64String(cipherText);
+            var fullCipher = cipherText;
 
             var iv = new byte[16];
             var cipher = new byte[fullCipher.Length - iv.Length];

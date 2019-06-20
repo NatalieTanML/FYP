@@ -48,7 +48,7 @@ namespace FYP.APIs
                     orderTotal = order.OrderTotal,
                     referenceNo = order.ReferenceNo,
                     request = order.Request,
-                    email = order.Email,
+                    emailString = order.EmailString,
                     updatedById = order.UpdatedById,
                     updatedBy = order.UpdatedBy?.Name,
                     deliveryTypeId = order.DeliveryTypeId,
@@ -111,6 +111,7 @@ namespace FYP.APIs
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(int id)
         {
             try
@@ -126,7 +127,7 @@ namespace FYP.APIs
                     orderTotal = order.OrderTotal,
                     referenceNo = order.ReferenceNo,
                     request = order.Request,
-                    email = order.Email,
+                    emailString = order.EmailString,
                     updatedById = order.UpdatedById,
                     updatedBy = order.UpdatedBy?.Name,
                     deliveryTypeId = order.DeliveryTypeId,
@@ -195,19 +196,15 @@ namespace FYP.APIs
         [AllowAnonymous]
         public async Task<IActionResult> CreateOrder([FromBody]Order inOrder)
         {
-            // get current logged in user's id
-            //int currentUserId = int.Parse(User.FindFirst("userid").Value);
-            //int currentUserId = 4;
-
             try
             {
                 // try add to database
-                await _orderService.Create(inOrder);
+                Order newOrder = await _orderService.Create(inOrder);
                 return Ok(new
                 {
                     createSuccess = true,
                     message = "Order created successfully!",
-                    order = inOrder
+                    order = newOrder
                 });
             }
             catch (Exception ex)
@@ -217,13 +214,12 @@ namespace FYP.APIs
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateStatus(int id, [FromBody]Order inOrder)
+        public async Task<IActionResult> UpdateStatus(int orderId, int newStatus)
         {
-            inOrder.OrderId = id;
-            inOrder.UpdatedById = 4;
+            int updatedById = 4; // update to current user
             try
             {
-                await _orderService.UpdateStatus(id, inOrder);
+                await _orderService.UpdateStatus(orderId, updatedById, newStatus);
                 return Ok(new { message = "Updated order status successfully!" });
             }
             catch (Exception ex)
