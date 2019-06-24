@@ -42,6 +42,7 @@ namespace FYP.APIs
             //inUser.CreatedById = int.Parse(User.FindFirst("userid").Value);
             inUser.CreatedById = 4;
 
+
             try
             {
                 // save new user
@@ -58,6 +59,23 @@ namespace FYP.APIs
                 // return error message if there was an exception
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        [AllowAnonymous]
+        [HttpGet("getRoles")]
+        public async Task<IActionResult> GetAllRoles()
+        {
+            var roles = await _userService.GetAllRoles();
+            List<object> rolesList = new List<object>();
+            foreach (Role role in roles)
+            {
+                rolesList.Add(new
+                {
+                   roleId = role.RoleId,
+                   roleName = role.RoleName,
+                });
+            }
+            return new JsonResult(rolesList);
         }
 
         [AllowAnonymous]

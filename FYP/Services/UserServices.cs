@@ -20,6 +20,7 @@ namespace FYP.Services
         Task<User> Create(User user);
         Task Update(User user, string password);
         Task Delete(int id);
+        Task<IEnumerable<Role>> GetAllRoles();
     }
 
     public class UserService : IUserService
@@ -119,6 +120,7 @@ namespace FYP.Services
             user.UpdatedAt = DateTime.Now;
             user.IsEnabled = true;
             user.ChangePassword = false;
+            
 
             // Add to database
             _context.Users.Add(user);
@@ -212,5 +214,10 @@ namespace FYP.Services
             return true;
         }
 
+        public async Task<IEnumerable<Role>> GetAllRoles()
+        {
+
+            return await _context.Roles.ToListAsync();
+        }
     }
 }
