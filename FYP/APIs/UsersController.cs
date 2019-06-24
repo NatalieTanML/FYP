@@ -38,18 +38,6 @@ namespace FYP.APIs
         [HttpPost("signup")]
         public async Task<IActionResult> SignUp([FromBody] User inUser)
         {
-            //User newUser = new User()
-            //{
-            //    Name = inUser.Name,
-            //    Email = inUser.Email,
-            //    RoleId = inUser.RoleId,
-            //    CreatedAt = DateTime.Now,
-            //    CreatedById = 4,
-            //    IsEnabled = true,
-            //    ChangePassword = false,
-
-            //};
-
             // set current user's id
             //inUser.CreatedById = int.Parse(User.FindFirst("userid").Value);
             inUser.CreatedById = 4;
@@ -74,9 +62,9 @@ namespace FYP.APIs
 
         [AllowAnonymous]
         [HttpPost("signin")]
-        public async Task<IActionResult> SignIn([FromForm] IFormCollection inFormData)
+        public async Task<IActionResult> SignIn([FromBody] User inUser)
         {
-            var user = await _userService.Authenticate(inFormData["username"], inFormData["password"]);
+            var user = await _userService.Authenticate(inUser.Email, inUser.Password);
 
             if (user == null)
                 return BadRequest(new { message = "Username or password is incorrect." });

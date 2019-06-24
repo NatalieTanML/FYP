@@ -25,6 +25,9 @@ namespace FYP.Models
         public int RoleId { get; set; }
         public Role Role { get; set; }
 
+        [NotMapped]
+        public string Password { get; set; }
+
         public ICollection<Order> UpdatedOrders { get; set; }
         public ICollection<Order> Deliveries { get; set; }
         public ICollection<Product> CreatedProducts { get; set; }
