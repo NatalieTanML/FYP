@@ -36,22 +36,28 @@ namespace FYP.APIs
 
         [AllowAnonymous]
         [HttpPost("signup")]
-        public async Task<IActionResult> SignUp([FromForm] IFormCollection inFormData)
+        public async Task<IActionResult> SignUp([FromBody] User inUser)
         {
-            User newUser = new User()
-            {
-                Email = inFormData["username"],
-                RoleId = 1,
-                CreatedAt = DateTime.Now,
-                CreatedById = 4,
-                IsEnabled = true,
-                ChangePassword = false,
+            //User newUser = new User()
+            //{
+            //    Name = inUser.Name,
+            //    Email = inUser.Email,
+            //    RoleId = inUser.RoleId,
+            //    CreatedAt = DateTime.Now,
+            //    CreatedById = 4,
+            //    IsEnabled = true,
+            //    ChangePassword = false,
 
-            };
+            //};
+
+            // set current user's id
+            //inUser.CreatedById = int.Parse(User.FindFirst("userid").Value);
+            inUser.CreatedById = 4;
+
             try
             {
                 // save new user
-                User newUserWithId = await _userService.Create(newUser);//inFormData["password"]);
+                User newUserWithId = await _userService.Create(inUser);
                 return Ok(new
                 {
                     newUserWithId.UserId,
@@ -99,6 +105,7 @@ namespace FYP.APIs
                 user = new
                 {
                     userId = user.UserId,
+                    name = user.Name,
                     email = user.Email,
                     isEnabled = user.IsEnabled,
                     changePassword = user.ChangePassword

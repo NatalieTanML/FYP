@@ -63,15 +63,11 @@ namespace FYP.Services
 
         public async Task<User> Create(User user)
         {
-            // validation to check if the password is empty or spaces only.
-        
-
             // If the user name (email) already exists, raise an exception
             // so that the Web API controller class code can capture the error and
             // send back a JSON response to the client side.
             if (await _context.Users.AnyAsync(u => u.Email == user.Email))
                 throw new AppException("Email " + user.Email + " is already in use");
-
 
             //Generate random string for password.
             //interesting article https://stackoverflow.com/questions/37170388/create-a-cryptographically-secure-random-guid-in-net
@@ -79,8 +75,7 @@ namespace FYP.Services
 
             var onebyte = new byte[16];
             rng.GetBytes(onebyte);
-            Guid guid = new Guid(onebyte);
-            string password = guid.ToString("N");
+            string password = new Guid(onebyte).ToString("N");
             password = password.Substring(0,11);
 
             // Create password hash & salt
@@ -119,14 +114,16 @@ namespace FYP.Services
                 client.Disconnect(true);
                 client.Dispose();
             }
+            // Update user details
+            user.CreatedAt = DateTime.Now;
+            user.UpdatedAt = DateTime.Now;
+            user.IsEnabled = true;
+            user.ChangePassword = false;
 
             // Add to database
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
             
-            //Generate email to user
-           
-
             // returns user once done
             return user;
         }

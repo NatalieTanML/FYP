@@ -34,7 +34,6 @@ namespace FYP.APIs
         [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
-            
             var orders = await _orderService.GetAll();
             List<object> orderList = new List<object>();
             foreach (Order order in orders)
@@ -211,6 +210,13 @@ namespace FYP.APIs
             {
                 throw new AppException("Unable to create order record.", new { message = ex.Message });
             }
+        }
+
+        [HttpPost("guid")]
+        [AllowAnonymous]
+        public IActionResult GenerateGUID()
+        {
+            return Ok(new { guid = Guid.NewGuid().ToString("N").ToUpper() });
         }
 
         [HttpPut("{id}")]

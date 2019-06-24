@@ -21,16 +21,13 @@ namespace FYP.APIs
     public class ProductsController : Controller
     {
         private IProductService _productService;
-        private readonly IS3Service _s3Service;
         //private IUserService _userService;
         private readonly AppSettings _appSettings;
 
         public ProductsController(IProductService productService, 
-            IS3Service s3Service, 
             IOptions<AppSettings> appSettings)
         {
             _productService = productService;
-            _s3Service = s3Service;
             _appSettings = appSettings.Value;
         }
 
