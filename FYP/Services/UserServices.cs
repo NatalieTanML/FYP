@@ -21,6 +21,7 @@ namespace FYP.Services
         Task Update(User user, string password);
         Task Delete(int id);
         Task<IEnumerable<Role>> GetAllRoles();
+        Task<User> ChangePassword(int id);
     }
 
     public class UserService : IUserService
@@ -70,7 +71,7 @@ namespace FYP.Services
             if (await _context.Users.AnyAsync(u => u.Email == user.Email))
                 throw new AppException("Email " + user.Email + " is already in use");
 
-           user = GenerateNewPasswordAndEmail(user);
+           user = GenerateNewPasswordAndEmail(user, "Registration Successful!");
 
             // Update user details
             user.CreatedAt = DateTime.Now;
@@ -186,7 +187,7 @@ namespace FYP.Services
             return true;
         }
 
-        private static User GenerateNewPasswordAndEmail(User user)
+        private static User GenerateNewPasswordAndEmail(User user, string messageSubject)
         {
 
             //Generate random string for password.
@@ -207,7 +208,7 @@ namespace FYP.Services
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("WY", "weiyang35@hotmail.com"));
             message.To.Add(new MailboxAddress("WY", user.Email));
-            message.Subject = "Registration successful";
+            message.Subject = messageSubject;
             message.Body = new TextPart("plain")
             {
                 Text = "Your New Password: " + password
@@ -240,6 +241,23 @@ namespace FYP.Services
         public async Task<IEnumerable<Role>> GetAllRoles()
         {
             return await _context.Roles.ToListAsync();
+        }
+
+        public async Task<User> ChangePassword(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            user = GenerateNewPasswordAndEmail(user, "Reset Password");
+
+            // Update user details
+            user.UpdatedAt = DateTime.Now;
+            user.ChangePassword = false;
+
+            // Add to database
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            // returns user once done
+            return user;
         }
     }
 }

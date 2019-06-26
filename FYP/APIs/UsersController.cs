@@ -60,18 +60,17 @@ namespace FYP.APIs
             }
         }
 
-        [HttpPost("changepassword")]
-        public async Task<IActionResult> ChangePassword([FromBody] User inUser)
+        [HttpPut("changepassword/{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ChangePassword(int id)
         {
             try
             {
-                // save new user
-                User newUserWithId = await _userService.Create(inUser);
+                await _userService.ChangePassword(id);
+
                 return Ok(new
                 {
-                    newUserWithId.UserId,
-                    signUpStatus = true,
-                    message = "User registered successfully"
+                    message = "Password has been resetted!" 
                 });
             }
             catch (Exception ex)
@@ -153,11 +152,12 @@ namespace FYP.APIs
             {
                 userList.Add(new
                 {
-                    userId = user.UserId,
-                    roleName = user.Role.RoleName,
-                    email = user.Email,
+                    id = user.UserId,
+                    role = user.Role.RoleName,
+                    username = user.Name,
                     isEnabled = user.IsEnabled,
-                    changePassword = user.ChangePassword
+                    createdBy = user.CreatedBy.Name,
+                    createdAt = user.CreatedAt
                 });
             }
             return new JsonResult(userList);
