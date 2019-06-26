@@ -70,51 +70,8 @@ namespace FYP.Services
             if (await _context.Users.AnyAsync(u => u.Email == user.Email))
                 throw new AppException("Email " + user.Email + " is already in use");
 
-            //Generate random string for password.
-            //interesting article https://stackoverflow.com/questions/37170388/create-a-cryptographically-secure-random-guid-in-net
-            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+           user = GenerateNewPasswordAndEmail(user);
 
-            var onebyte = new byte[16];
-            rng.GetBytes(onebyte);
-            string password = new Guid(onebyte).ToString("N");
-            password = password.Substring(0,11);
-
-            // Create password hash & salt
-            byte[] passwordHash, passwordSalt;
-            CreatePasswordHash(password, out passwordHash, out passwordSalt);
-            user.PasswordHash = passwordHash;
-            user.PasswordSalt = passwordSalt;
-
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("WY", "weiyang35@hotmail.com"));
-            message.To.Add(new MailboxAddress("WY", user.Email));
-            message.Subject = "Registration successful";
-            message.Body = new TextPart("plain")
-            {
-                Text = "Your New Password: " + password
-            };
-
-            using (var client = new MailKit.Net.Smtp.SmtpClient())
-            {
-
-                //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
-                //client.AuthenticationMechanisms.Remove("XOAUTH2");
-                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-
-                //Google
-                client.Connect("smtp.office365.com", 587, false);
-                client.Authenticate("weiyang35@hotmail.com", "S9925187E");
-
-                // Start of provider specific settings
-                //Yhoo
-                // client.Connect("smtp.mail.yahoo.com", 587, false);
-                // client.Authenticate("yahoo", "password");
-
-                // End of provider specific settings
-                client.Send(message);
-                client.Disconnect(true);
-                client.Dispose();
-            }
             // Update user details
             user.CreatedAt = DateTime.Now;
             user.UpdatedAt = DateTime.Now;
@@ -149,6 +106,8 @@ namespace FYP.Services
                     CreatePasswordHash(inPassword, out passwordHash, out passwordSalt);
                     user.PasswordHash = passwordHash;
                     user.PasswordSalt = passwordSalt;
+
+                    user.ChangePassword = true;
                 }
             }
             // otherwise, if there are fields like email, it means the request
@@ -167,6 +126,7 @@ namespace FYP.Services
                 user.IsEnabled = userParam.IsEnabled;
                 user.Name = userParam.Name;
                 user.RoleId = userParam.RoleId;
+                user.UpdatedAt = DateTime.Now;
             }
             
             _context.Users.Update(user);
@@ -224,6 +184,57 @@ namespace FYP.Services
             }
 
             return true;
+        }
+
+        private static User GenerateNewPasswordAndEmail(User user)
+        {
+
+            //Generate random string for password.
+            //interesting article https://stackoverflow.com/questions/37170388/create-a-cryptographically-secure-random-guid-in-net
+            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+
+            var onebyte = new byte[16];
+            rng.GetBytes(onebyte);
+            string password = new Guid(onebyte).ToString("N");
+            password = password.Substring(0, 11);
+
+            // Create password hash & salt
+            byte[] passwordHash, passwordSalt;
+            CreatePasswordHash(password, out passwordHash, out passwordSalt);
+            user.PasswordHash = passwordHash;
+            user.PasswordSalt = passwordSalt;
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("WY", "weiyang35@hotmail.com"));
+            message.To.Add(new MailboxAddress("WY", user.Email));
+            message.Subject = "Registration successful";
+            message.Body = new TextPart("plain")
+            {
+                Text = "Your New Password: " + password
+            };
+
+            using (var client = new MailKit.Net.Smtp.SmtpClient())
+            {
+
+                //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
+                //client.AuthenticationMechanisms.Remove("XOAUTH2");
+                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+
+                //Google
+                client.Connect("smtp.office365.com", 587, false);
+                client.Authenticate("weiyang35@hotmail.com", "S9925187E");
+
+                // Start of provider specific settings
+                //Yhoo
+                // client.Connect("smtp.mail.yahoo.com", 587, false);
+                // client.Authenticate("yahoo", "password");
+
+                // End of provider specific settings
+                client.Send(message);
+                client.Disconnect(true);
+                client.Dispose();
+            }
+            return user;
         }
 
         public async Task<IEnumerable<Role>> GetAllRoles()

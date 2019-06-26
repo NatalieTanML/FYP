@@ -60,6 +60,27 @@ namespace FYP.APIs
             }
         }
 
+        [HttpPost("changepassword")]
+        public async Task<IActionResult> ChangePassword([FromBody] User inUser)
+        {
+            try
+            {
+                // save new user
+                User newUserWithId = await _userService.Create(inUser);
+                return Ok(new
+                {
+                    newUserWithId.UserId,
+                    signUpStatus = true,
+                    message = "User registered successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                // return error message if there was an exception
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [AllowAnonymous]
         [HttpGet("getRoles")]
         public async Task<IActionResult> GetAllRoles()
@@ -152,7 +173,8 @@ namespace FYP.APIs
                 email = user.Email,
                 name = user.Name,
                 roleName = user.Role.RoleName,
-                roleId = user.Role.RoleId
+                roleId = user.Role.RoleId,
+                isEnabled = user.IsEnabled
 
             });
         }
@@ -173,7 +195,6 @@ namespace FYP.APIs
         }
 
         [HttpPut("{id}")]
-        [AllowAnonymous]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] User inUser)
         {
             string password = inUser.Password;
