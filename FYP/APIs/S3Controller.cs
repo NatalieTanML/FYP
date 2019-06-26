@@ -25,6 +25,7 @@ namespace FYP.APIs
             _appSettings = appSettings.Value;
         }
 
+        // this method is called when a user adds a customized product to the cart
         [HttpPost("temp")]
         [AllowAnonymous]
         public async Task<IActionResult> UploadImage(IFormFile file, string guidString)
@@ -44,13 +45,14 @@ namespace FYP.APIs
             }
         }
 
+        // this method is called when a user successfully completes payment for an order
         [HttpPost("perm")]
         [AllowAnonymous]
-        public async Task<IActionResult> CopyToPerm(string guidString, int count)
+        public async Task<IActionResult> CopyToPerm(List<string> imgKeys)
         {
             try
             {
-                List<string> imgUrls = await _s3Service.CopyImagesAsync(guidString, count);
+                List<string> imgUrls = await _s3Service.CopyImagesAsync(imgKeys);
                 return Ok(new
                 {
                     message = "Images saved successfully",
@@ -63,13 +65,18 @@ namespace FYP.APIs
             }
         }
 
+        // this method is called when the admin adds a new product
+        // takes in a collection of blob files (image files)
+        // returns a list of ProductImage objects, that will be added
+        // to the next json call to CreateProduct in ProductsController.
+        // the list returned contains the image key + url for each image
         [HttpPost("product")]
         [AllowAnonymous]
-        public async Task<IActionResult> UploadProductImages(List<ProductImage> images, ICollection<IFormFile> imageFiles)
+        public async Task<IActionResult> UploadProductImages(ICollection<IFormFile> imageFiles)
         {
             try
             {
-                List<ProductImage> outImages = await _s3Service.UploadProductImagesAsync(images, imageFiles);
+                List<ProductImage> outImages = await _s3Service.UploadProductImagesAsync(imageFiles);
                 return Ok(new
                 {
                     message = "Uploaded product images",

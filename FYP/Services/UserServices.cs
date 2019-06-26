@@ -216,7 +216,6 @@ namespace FYP.Services
 
         public async Task<IEnumerable<Role>> GetAllRoles()
         {
-
             return await _context.Roles.ToListAsync();
         }
     }
