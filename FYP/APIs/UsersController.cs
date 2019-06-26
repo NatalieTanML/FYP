@@ -114,7 +114,8 @@ namespace FYP.APIs
                     name = user.Name,
                     email = user.Email,
                     isEnabled = user.IsEnabled,
-                    changePassword = user.ChangePassword
+                    changePassword = user.ChangePassword,
+                    userRole = user.Role.RoleName
                 },
                 token = tokenString
             });
@@ -146,7 +147,11 @@ namespace FYP.APIs
             return Ok(new
             {
                 id = user.UserId,
-                email = user.Email
+                email = user.Email,
+                name = user.Name,
+                roleName = user.Role.RoleName,
+                roleId = user.Role.RoleId
+
             });
         }
 
