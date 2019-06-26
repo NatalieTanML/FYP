@@ -263,10 +263,12 @@ namespace FYP.Services
                 order.UpdatedAt = DateTime.Now;
                 order.UpdatedById = updatedById;
                 order.OrderRecipientId = recipient.OrderRecipientId;
+                order.StatusId = 5; // marked as delivery complete
             }
 
             _context.Orders.UpdateRange(orders);
             await _context.SaveChangesAsync();
+            await _orderHub.NotifyMultipleChanges(orders);
         }
 
         // private helper methods
