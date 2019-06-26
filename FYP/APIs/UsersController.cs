@@ -42,7 +42,6 @@ namespace FYP.APIs
             //inUser.CreatedById = int.Parse(User.FindFirst("userid").Value);
             inUser.CreatedById = 4;
 
-
             try
             {
                 // save new user
@@ -183,20 +182,15 @@ namespace FYP.APIs
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, IFormCollection inFormData)
+        [AllowAnonymous]
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] User inUser)
         {
-            User user = new User()
-            {
-                ChangePassword = true,
-                UserId = id,
-                Email = inFormData["username"]
-                // update with disabled/not disabled
-            };
-            string password = inFormData["password"];
+            string password = inUser.Password;
+            inUser.UserId = id;
             try
             {
                 // save (excluding password update)
-                await _userService.Update(user, password);
+                await _userService.Update(inUser, password);
                 return Ok(new { message = "Completed user profile update." });
             }
             catch (Exception ex)

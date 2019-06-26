@@ -12,7 +12,7 @@ namespace FYP.Hubs
 {
     public interface IOrderHub
     {
-        Task NotifyAllClients();
+        Task NotifyAllClients(Order newOrder);
     }
 
     public class OrderHub : Hub, IOrderHub
@@ -24,9 +24,9 @@ namespace FYP.Hubs
             _hubContext = hubContext;
         }
 
-        public async Task NotifyAllClients()
+        public async Task NotifyAllClients(Order newOrder)
         {
-            await _hubContext.Clients.All.SendAsync("ReceiveChanges");
+            await _hubContext.Clients.All.SendAsync("ReceiveChanges", newOrder);
         }
     }
 }

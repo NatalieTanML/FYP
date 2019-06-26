@@ -78,7 +78,6 @@ namespace FYP.Services
             user.IsEnabled = true;
             user.ChangePassword = false;
             
-
             // Add to database
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
@@ -94,26 +93,39 @@ namespace FYP.Services
             if (user == null)
                 throw new AppException("User not found.");
 
-            if (userParam.Email != user.Email)
+            // check whether the update request is from 
+            // ChangePassword page or from UpdateDetails page 
+            // if the email is empty/null/"", it means that the 
+            // request is to change password only, therefore just update the password
+            if (string.IsNullOrWhiteSpace(userParam.Email))
             {
-                // username has changed, check if new username is taken
-                if (await _context.Users.AnyAsync(x => x.Email == userParam.Email))
-                    throw new AppException("Email " + userParam.Email + " is already in use.");
+                // update password if it was entered
+                if (!string.IsNullOrWhiteSpace(inPassword))
+                {
+                    byte[] passwordHash, passwordSalt;
+                    CreatePasswordHash(inPassword, out passwordHash, out passwordSalt);
+                    user.PasswordHash = passwordHash;
+                    user.PasswordSalt = passwordSalt;
+                }
             }
-
-            // update user properties
-           
-            user.IsEnabled = userParam.IsEnabled;
-            user.ChangePassword = true;
-            // update password if it was entered
-            if (!string.IsNullOrWhiteSpace(inPassword))
+            // otherwise, if there are fields like email, it means the request
+            // was sent from the UpdateDetails page from the user management pg
+            else
             {
-                byte[] passwordHash, passwordSalt;
-                CreatePasswordHash(inPassword, out passwordHash, out passwordSalt);
-                user.PasswordHash = passwordHash;
-                user.PasswordSalt = passwordSalt;
+                if (userParam.Email != user.Email)
+                {
+                    // email has changed, check if new email is taken
+                    if (await _context.Users.AnyAsync(x => x.Email == userParam.Email))
+                        throw new AppException("Email " + userParam.Email + " is already in use.");
+                    else
+                        user.Email = userParam.Email;
+                }
+                // update user properties
+                user.IsEnabled = userParam.IsEnabled;
+                user.Name = userParam.Name;
+                user.RoleId = userParam.RoleId;
             }
-
+            
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
         }
