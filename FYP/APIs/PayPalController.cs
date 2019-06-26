@@ -19,15 +19,13 @@ namespace FYP.APIs
     public class PayPalController : Controller
     {
         private IPayPalService _payPalService;
-        private readonly OrdersController _ordersController;
         private readonly AppSettings _appSettings;
 
         public PayPalController(IPayPalService payPalService, 
             IOptions<AppSettings> appSettings, 
-            OrdersController ordersController)
+            IOrderService ordersService)
         {
             _payPalService = payPalService;
-            _ordersController = ordersController;
             _appSettings = appSettings.Value;
         }
 
