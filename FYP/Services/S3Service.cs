@@ -66,7 +66,7 @@ namespace FYP.Services
                         StorageClass = S3StorageClass.Standard,
                         //PartSize = 10485760, // 10mb
                         Key = guid,
-                        CannedACL = S3CannedACL.AuthenticatedRead
+                        CannedACL = S3CannedACL.Private
                     };
 
                     // upload to s3 asynchronously, then dispose the memorystream
