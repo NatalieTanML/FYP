@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json.Linq;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -219,14 +220,48 @@ namespace FYP.APIs
             return Ok(new { guid = Guid.NewGuid().ToString("N").ToUpper() });
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateStatus(int orderId, bool isSuccessful)
+        [HttpPut("{isSuccessful:bool}")]
+        public async Task<IActionResult> UpdateStatuses([FromBody] List<int> orderIds, bool isSuccessful)
         {
             int updatedById = 4; // update to current user
             try
             {
-                await _orderService.UpdateStatus(orderId, updatedById, isSuccessful);
-                return Ok(new { message = "Updated order status successfully!" });
+                await _orderService.UpdateStatuses(orderIds, updatedById, isSuccessful);
+                return Ok(new { message = "Updated order(s) status(es) successfully!" });
+            }
+            catch (Exception ex)
+            {
+                // return error message 
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("{deliveryManId:int}")]
+        public async Task<IActionResult> AssignDeliveryman([FromBody] List<int> orderIds, int deliveryManId)
+        {
+            int updatedById = 4; // update to current user
+            try
+            {
+                await _orderService.AssignDeliveryman(orderIds, deliveryManId, updatedById);
+                return Ok(new { message = "Updated order(s) deliveryman successfully!" });
+            }
+            catch (Exception ex)
+            {
+                // return error message 
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateRecipient([FromBody] JObject data)
+        {
+            List<int> orderIds = data["orderIds"].ToObject<List<int>>();
+            OrderRecipient recipient = data["recipient"].ToObject<OrderRecipient>();
+            int updatedById = 4;
+            try
+            {
+                await _orderService.UpdateRecipient(orderIds, recipient, updatedById);
+                return Ok(new { message = "Updated order(s) recipient successfuly!" });
             }
             catch (Exception ex)
             {
