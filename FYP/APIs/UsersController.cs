@@ -82,46 +82,53 @@ namespace FYP.APIs
         [HttpPost("signin")]
         public async Task<IActionResult> SignIn([FromBody] User inUser)
         {
-            var user = await _userService.Authenticate(inUser.Email, inUser.Password);
-
-            if (user == null)
-                return BadRequest(new { message = "Email or password is incorrect." });
-
-            if (user.IsEnabled == false)
-                return BadRequest(new { message = "Account is disabled. Please contact the administrator." });
-
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
-            var tokenDescriptor = new SecurityTokenDescriptor
+            try
             {
-                Subject = new ClaimsIdentity(new Claim[]
+                var user = await _userService.Authenticate(inUser.Email, inUser.Password);
+
+                if (user == null)
+                    return BadRequest(new { message = "Email or password is incorrect." });
+
+                if (user.IsEnabled == false)
+                    return BadRequest(new { message = "Account is disabled. Please contact the administrator." });
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+                var tokenDescriptor = new SecurityTokenDescriptor
                 {
+                    Subject = new ClaimsIdentity(new Claim[]
+                    {
                     new Claim(ClaimTypes.Name, user.UserId.ToString()),
                     new Claim("userid", user.UserId.ToString()),
                     new Claim(ClaimTypes.Role, user.Role.RoleName),
                     new Claim("isenabled", user.IsEnabled.ToString()),
                     new Claim("changepassword", user.ChangePassword.ToString())
-                }),
-                Expires = DateTime.UtcNow.AddDays(7),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            var tokenString = tokenHandler.WriteToken(token);
+                    }),
+                    Expires = DateTime.UtcNow.AddDays(7),
+                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                };
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+                var tokenString = tokenHandler.WriteToken(token);
 
-            // return basic user info (w/o password) and token to store @ client side
-            return Ok(new
-            {
-                user = new
+                // return basic user info (w/o password) and token to store @ client side
+                return Ok(new
                 {
-                    userId = user.UserId,
-                    name = user.Name,
-                    email = user.Email,
-                    isEnabled = user.IsEnabled,
-                    changePassword = user.ChangePassword,
-                    userRole = user.Role.RoleName
-                },
-                token = tokenString
-            });
+                    user = new
+                    {
+                        userId = user.UserId,
+                        name = user.Name,
+                        email = user.Email,
+                        isEnabled = user.IsEnabled,
+                        changePassword = user.ChangePassword,
+                        userRole = user.Role.RoleName
+                    },
+                    token = tokenString
+                });
+            }catch(Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+
+            }
         }
 
         [HttpGet]
@@ -153,7 +160,9 @@ namespace FYP.APIs
                 email = user.Email,
                 name = user.Name,
                 roleName = user.Role.RoleName,
-                roleId = user.Role.RoleId
+                roleId = user.Role.RoleId,
+                isEnabled = user.IsEnabled,
+
 
             });
         }
