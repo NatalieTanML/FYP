@@ -135,7 +135,7 @@ namespace FYP.Services
                 // add to database
                 await _context.Orders.AddAsync(newOrder);
                 await _context.SaveChangesAsync();
-                await _orderHub.NotifyAllClients();
+                await _orderHub.NotifyAllClients(newOrder);
 
                 // returns product once done
                 return newOrder;
@@ -171,7 +171,7 @@ namespace FYP.Services
 
             _context.Orders.Update(order);
             await _context.SaveChangesAsync();
-            await _orderHub.NotifyAllClients();
+            await _orderHub.NotifyAllClients(order);
         }
 
 
