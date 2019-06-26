@@ -220,12 +220,12 @@ namespace FYP.APIs
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateStatus(int orderId, int newStatus)
+        public async Task<IActionResult> UpdateStatus(int orderId, bool isSuccessful)
         {
             int updatedById = 4; // update to current user
             try
             {
-                await _orderService.UpdateStatus(orderId, updatedById, newStatus);
+                await _orderService.UpdateStatus(orderId, updatedById, isSuccessful);
                 return Ok(new { message = "Updated order status successfully!" });
             }
             catch (Exception ex)

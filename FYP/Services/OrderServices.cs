@@ -28,7 +28,8 @@ namespace FYP.Services
         Task<IEnumerable<Order>> GetAll();
         Task<Order> GetById(int id);
         Task<Order> Create(Order order);
-        Task UpdateStatus(int userId, int updatedById, int newStatus);
+        Task UpdateStatus(int orderId, int updatedById, bool isSuccessful);
+        Task AssignDeliveryman(int id, int deliveryManId);
     }
 
     public class OrderService : IOrderService
@@ -146,26 +147,68 @@ namespace FYP.Services
             }
         }
 
-        public async Task UpdateStatus(int id, int updatedById, int newStatus)
+        public async Task UpdateStatus(int orderId, int updatedById, bool isSuccessful)
         {
-            var order = await _context.Orders.FindAsync(id);
+            var order = await _context.Orders.FindAsync(orderId);
 
             // if order does not exist
             if (order == null)
                 throw new AppException("Order not found.");
 
-            // update product status
-            //switch(newStatus)
-            //{
-            //    // status "Awaiting Printing"
-            //    case 2:
-            //        order.StatusId = newStatus;
-            //        break;
-            //    // status "Printed"
-            //    case 3:
-            //        order.StatusId = newStatus
-            //}
-            
+            // get current order's status
+            int currentStatus = order.StatusId;
+
+            // update product status, isSuccessful means that the update request is OK
+            if (isSuccessful)
+            {
+                // do a switch loop to determine next status
+                switch (currentStatus)
+                {
+                    // case 1 is accepted order, update to await print
+                    case 1:
+                        order.StatusId = 2;
+                        break;
+                    // case 2 is await print, update to printed
+                    case 2:
+                        order.StatusId = 3;
+                        break;
+                    // case 3 is printed, update to out for delivery
+                    case 3:
+                        order.StatusId = 4;
+                        break;
+                    // case 4 is out for delivery, update to delivery complete
+                    case 4:
+                        order.StatusId = 5;
+                        break;
+                    // case 6 is failed delivery (assume retry and is now out for delivery again)
+                    // update front end to have a retry delivery button so it can pass to here
+                    case 6:
+                        order.StatusId = 4;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            else
+            {
+                switch (currentStatus)
+                {
+                    // for statuses where its not out for delivery, assume order is cancelled
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 6:     // if delivery failed and want to cancel order instead of retrying
+                        order.StatusId = 8;
+                        break;
+                    // if out for delivery, means delivery failed
+                    case 4:
+                        order.StatusId = 6;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
             order.UpdatedAt = DateTime.Now;
             order.UpdatedById = updatedById;
 
@@ -174,6 +217,14 @@ namespace FYP.Services
             await _orderHub.NotifyAllClients(order);
         }
 
+        public async Task AssignDeliveryman(int id, int deliveryManId)
+        {
+            var order = await _context.Orders.FindAsync(id);
+
+            // if order does not exist
+            if (order == null)
+                throw new AppException("Order not found.");
+        }
 
         // private helper methods
         public static byte[] EncryptString(string text, string keyString)
