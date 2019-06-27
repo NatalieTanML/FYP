@@ -134,7 +134,7 @@ namespace FYP.Services
                             InputStream = outputStream,
                             StorageClass = S3StorageClass.Standard,
                             //PartSize = 10485760, // 10mb
-                            Key = FileName, // TODO: update to use unique name (probably order number + orderitem id or similar)
+                            Key = FileName, 
                             CannedACL = S3CannedACL.PublicRead
                         };
 

@@ -84,7 +84,7 @@ namespace FYP.APIs
         }
 
         [AllowAnonymous]
-        [HttpPost("productsByPage")]
+        [HttpPost("page")]
         public async Task<IActionResult> GetProductsByPage([FromForm] IFormCollection inFormData)
         {
             try
@@ -197,7 +197,7 @@ namespace FYP.APIs
         }
 
         [AllowAnonymous]
-        [HttpGet("productEcommerce/{id}")]
+        [HttpGet("ecommerce/{id}")]
         public async Task<IActionResult> GetProductEcommerce(int id)
         {
             try
