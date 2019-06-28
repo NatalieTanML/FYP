@@ -213,6 +213,25 @@ namespace FYP.APIs
             }
         }
 
+        [HttpGet("getOrderStatus")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetOrderStatus()
+        {
+            var statuses = await _orderService.GetAllStatus();
+
+            List<object> statusList = new List<object>();
+            foreach (Status status in statuses)
+            {
+                statusList.Add(new {
+                    statusId = status.StatusId,
+                   statusName = status.StatusName
+                });
+
+            }
+
+            return new JsonResult(statusList);
+        }
+
         [HttpPost("guid")]
         [AllowAnonymous]
         public IActionResult GenerateGUID()
