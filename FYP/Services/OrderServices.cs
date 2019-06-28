@@ -37,26 +37,26 @@ namespace FYP.Services
     public class OrderService : IOrderService
     {
         private ApplicationDbContext _context;
-        private readonly IOrderHub _orderHub;
         private readonly AppSettings _appSettings;
-        private readonly IAmazonS3 _client;
         private readonly IConfiguration _configuration;
+        private readonly IOrderHub _orderHub;
+        private readonly IS3Service _s3Service;
 
         private const string bucketName = "20190507test1";
         private const string FileName = "image3.jpg";
         private readonly string encryptionKey;
         
-        public OrderService(ApplicationDbContext context, 
-            IOrderHub orderHub, 
+        public OrderService(ApplicationDbContext context,
             IOptions<AppSettings> appSettings,
-            IAmazonS3 client,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IOrderHub orderHub, 
+            IS3Service s3Service)
         {
             _context = context;
-            _orderHub = orderHub;
             _appSettings = appSettings.Value;
-            _client = client;
             _configuration = configuration;
+            _orderHub = orderHub;
+            _s3Service = s3Service;
 
             // get encryption key for email
             encryptionKey = _configuration.GetValue<string>("Encryption:Key");
@@ -109,13 +109,19 @@ namespace FYP.Services
         {
             try
             {
-                // upload images to s3
-                //await _s3Service.UploadImageAsync("https://20190507test1.s3-ap-southeast-1.amazonaws.com/image.jpg");
-
-                // put the new images url into object
+                List<string> imgKeys = new List<string>();
                 foreach (OrderItem item in order.OrderItems)
                 {
-                    item.OrderImageUrl = "https://20190507test1.s3-ap-southeast-1.amazonaws.com/" + "image5" + ".jpg";
+                    imgKeys.Add(item.OrderImageKey);
+                }
+
+                // make images on s3 permanent
+                List<string> imgUrls = await _s3Service.CopyImagesAsync(imgKeys);
+
+                // put the new images url into object
+                for (int i = 0; i < order.OrderItems.Count; i++)
+                {
+                    order.OrderItems.ElementAt(i).OrderImageUrl = imgUrls.ElementAt(i);
                 }
                 
                 // create new order object to be added

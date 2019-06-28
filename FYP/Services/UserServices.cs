@@ -15,6 +15,7 @@ namespace FYP.Services
     public interface IUserService
     {
         Task<IEnumerable<User>> GetAll();
+        Task<IEnumerable<User>> GetDeliverymen();
         Task<User> GetById(int id);
         Task<User> Authenticate(string email, string password);
         Task<User> Create(User user);
@@ -38,6 +39,14 @@ namespace FYP.Services
         public async Task<IEnumerable<User>> GetAll()
         {
             return await _context.Users.Include(user => user.Role).ToListAsync();
+        }
+
+        public async Task<IEnumerable<User>> GetDeliverymen()
+        {
+            return await _context.Users
+                .Include(user => user.Role)
+                .Where(user => user.RoleId == 2)
+                .ToListAsync();
         }
 
         public async Task<User> GetById(int id)

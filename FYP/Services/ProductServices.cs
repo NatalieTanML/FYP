@@ -169,7 +169,12 @@ namespace FYP.Services
 
         public async Task Update(Product productParam)
         {
-            var product = await _context.Products.FindAsync(productParam.ProductId);
+            var product = await _context.Products
+                .Where(p => p.ProductId == productParam.ProductId)
+                .Include(p => p.DiscountPrices)
+                .Include(p => p.Options)
+                .ThenInclude(p => p.ProductImages)
+                .SingleOrDefaultAsync();
 
             // if product does not exist
             if (product == null)
@@ -177,51 +182,12 @@ namespace FYP.Services
 
             // product exists, try to update
             try {
-                // ensure the prices are properly entered
-                List<DiscountPrice> newPrices = new List<DiscountPrice>();
-                foreach (DiscountPrice price in productParam.DiscountPrices)
-                {
-                    newPrices.Add(new DiscountPrice
-                    {
-                        EffectiveStartDate = DateTime.ParseExact(price.EffectiveStartDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
-                        EffectiveEndDate = DateTime.ParseExact(price.EffectiveEndDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
-                        DiscountValue = decimal.Parse(price.DiscountValue.ToString()),
-                        IsPercentage = bool.Parse(price.IsPercentage.ToString())
-                    });
-                }
-
-                // ensure the options are properly entered
-                List<Option> newOptions = new List<Option>();
-                List<ProductImage> newImages = new List<ProductImage>();
-                foreach (Option op in productParam.Options)
-                {
-                    foreach (ProductImage img in op.ProductImages)
-                    {
-                        newImages.Add(new ProductImage
-                        {
-                            ImageKey = "img.jpg",
-                            ImageUrl = "url to be updated"
-                        });
-                    };
-                    newOptions.Add(new Option
-                    {
-                        SKUNumber = op.SKUNumber,
-                        OptionType = op.OptionType,
-                        OptionValue = op.OptionValue,
-                        CurrentQuantity = int.Parse(op.CurrentQuantity.ToString()),
-                        MinimumQuantity = int.Parse(op.MinimumQuantity.ToString()),
-                        ProductImages = newImages
-                    });
-                    newImages.Clear();
-                }
-
                 // checks if another product with the same name exists already
                 if (await _context.Products.CountAsync(p => p.ProductName == productParam.ProductName) > 1)
                 {
                     throw new AppException("Product name '" + productParam.ProductName + "' already exists in the database.");
                 }
 
-                // all good, can update product properties now
                 product.ProductName = productParam.ProductName;
                 product.Description = productParam.Description;
                 product.Price = decimal.Parse(productParam.Price.ToString());
@@ -230,12 +196,141 @@ namespace FYP.Services
                 product.EffectiveStartDate = DateTime.ParseExact(productParam.EffectiveStartDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture);
                 product.EffectiveEndDate = DateTime.ParseExact(productParam.EffectiveEndDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture);
                 product.UpdatedAt = DateTime.Now;
-                product.DiscountPrices = newPrices;
-                product.Options = newOptions;
-                product.CategoryId = 2;
-
                 _context.Products.Update(product);
+
+                // ensure the input prices are properly entered
+                List<DiscountPrice> newPrices = new List<DiscountPrice>();
+                foreach (DiscountPrice price in productParam.DiscountPrices)
+                {
+                    newPrices.Add(new DiscountPrice
+                    {
+                        DiscountPriceId = price.DiscountPriceId,
+                        ProductId = price.ProductId,
+                        EffectiveStartDate = DateTime.ParseExact(price.EffectiveStartDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
+                        EffectiveEndDate = DateTime.ParseExact(price.EffectiveEndDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
+                        DiscountValue = decimal.Parse(price.DiscountValue.ToString()),
+                        IsPercentage = bool.Parse(price.IsPercentage.ToString())
+                    });
+                }
+                
+                // ensure the new options are properly entered
+                List<Option> newOptions = new List<Option>();
+                foreach (Option op in productParam.Options)
+                {
+                    List<ProductImage> newImages = new List<ProductImage>();
+                    foreach (ProductImage img in op.ProductImages)
+                    {
+                        newImages.Add(new ProductImage
+                        {
+                            ProductImageId = img.ProductImageId,
+                            OptionId = img.OptionId,
+                            ImageKey = img.ImageKey,
+                            ImageUrl = img.ImageUrl
+                        });
+                    };
+                    newOptions.Add(new Option
+                    {
+                        OptionId = op.OptionId,
+                        ProductId = op.ProductId,
+                        SKUNumber = op.SKUNumber,
+                        OptionType = op.OptionType,
+                        OptionValue = op.OptionValue,
+                        CurrentQuantity = int.Parse(op.CurrentQuantity.ToString()),
+                        MinimumQuantity = int.Parse(op.MinimumQuantity.ToString()),
+                        ProductImages = newImages
+                    });
+                    
+                }
+
+                List<string> imagesToDelete = new List<string>();
+
+                // Delete children records if it is removed from the new product
+                foreach (DiscountPrice childDP in product.DiscountPrices)
+                {
+                    if (!newPrices.Any(p => p.DiscountPriceId == childDP.DiscountPriceId))
+                        _context.DiscountPrices.Remove(childDP);
+                }
+
+                foreach (Option childOP in product.Options)
+                {
+                    if (!newOptions.Any(o => o.OptionId == childOP.OptionId))
+                    {
+                        foreach (ProductImage childImg in childOP.ProductImages)
+                        {
+                            imagesToDelete.Add(childImg.ImageKey);
+                            _context.ProductImages.Remove(childImg);
+                        }
+                        _context.Options.Remove(childOP);
+                    }
+                    else
+                    {
+                        foreach (ProductImage childImg in childOP.ProductImages)
+                        {
+                            if (!newOptions.Any(o => o.ProductImages.Any(i => i.ProductImageId == childImg.ProductImageId)))
+                            {
+                                imagesToDelete.Add(childImg.ImageKey);
+                                _context.ProductImages.Remove(childImg);
+                            }
+                        }
+                    }
+                }
+
+                // Update and insert new children records
+                foreach (DiscountPrice dpModel in newPrices)
+                {
+                    DiscountPrice existingPrice = product.DiscountPrices
+                        .Where(d => d.DiscountPriceId == dpModel.DiscountPriceId)
+                        .SingleOrDefault();
+
+                    if (existingPrice != null)
+                    {
+                        // update the price since it exists
+                        _context.Entry(existingPrice).CurrentValues.SetValues(dpModel);
+                    }
+                    else
+                    {
+                        // does not exist, thus insert
+                        product.DiscountPrices.Add(dpModel);
+                    }
+                }
+
+                foreach (Option opModel in newOptions)
+                {
+                    Option existingOption = product.Options
+                        .Where(o => o.OptionId == opModel.OptionId)
+                        .SingleOrDefault();
+
+                    if (existingOption != null)
+                    {
+                        // update the images first
+                        foreach (ProductImage imgModel in opModel.ProductImages)
+                        {
+                            ProductImage existingImage = existingOption.ProductImages
+                                .Where(i => i.ProductImageId == imgModel.ProductImageId)
+                                .SingleOrDefault();
+
+                            if (existingImage != null)
+                            {
+                                // if image exists, update
+                                _context.Entry(existingImage).CurrentValues.SetValues(imgModel);
+                            }
+                        }
+                        // now update the options to the db
+                        _context.Entry(existingOption).CurrentValues.SetValues(opModel);
+                    }
+                    else
+                    {
+                        // update the product's options with the new ones
+                        product.Options.Add(opModel);
+                    }
+                }
+
+                // all good, can save changes
                 await _context.SaveChangesAsync();
+
+                // finally, delete images from s3
+                if (imagesToDelete.Count > 0)
+                    await _s3Service.DeleteImages(imagesToDelete);
             }
             catch (Exception ex)
             {

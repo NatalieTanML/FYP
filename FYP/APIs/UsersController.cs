@@ -154,10 +154,31 @@ namespace FYP.APIs
                 {
                     id = user.UserId,
                     role = user.Role.RoleName,
-                    username = user.Name,
+                    name = user.Name,
+                    email = user.Email,
                     isEnabled = user.IsEnabled,
                     createdBy = user.CreatedBy.Name,
                     createdAt = user.CreatedAt
+                });
+            }
+            return new JsonResult(userList);
+        }
+
+        [AllowAnonymous]
+        [HttpGet("deliverymen")]
+        public async Task<IActionResult> GetAllDeliverymen()
+        {
+            var deliverymen = await _userService.GetDeliverymen();
+            List<object> userList = new List<object>();
+            foreach (User user in deliverymen)
+            {
+                userList.Add(new
+                {
+                    id = user.UserId,
+                    role = user.Role.RoleName,
+                    name = user.Name,
+                    email = user.Email,
+                    isEnabled = user.IsEnabled,
                 });
             }
             return new JsonResult(userList);

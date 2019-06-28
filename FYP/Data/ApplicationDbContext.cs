@@ -59,7 +59,7 @@ namespace FYP.Data
                 .HasOne(input => input.Category)
                 .WithMany(input => input.Products)
                 .HasForeignKey(input => input.CategoryId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<Product>()
                 .HasOne(a => a.CreatedBy)
