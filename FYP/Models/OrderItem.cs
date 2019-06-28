@@ -12,6 +12,9 @@ namespace FYP.Models
         public int Quantity { get; set; }
         public string OrderImageUrl { get; set; }
 
+        [NotMapped]
+        public string OrderImageKey { get; set; }
+
         public int OrderId { get; set; }
         public Order Order { get; set; }
         

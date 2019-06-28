@@ -21,6 +21,7 @@ namespace FYP.Services
         Task Update(User user, string password);
         Task Delete(int id);
         Task<IEnumerable<Role>> GetAllRoles();
+        Task<User> ChangePassword(int id);
     }
 
     public class UserService : IUserService
@@ -70,58 +71,14 @@ namespace FYP.Services
             if (await _context.Users.AnyAsync(u => u.Email == user.Email))
                 throw new AppException("Email " + user.Email + " is already in use");
 
-            //Generate random string for password.
-            //interesting article https://stackoverflow.com/questions/37170388/create-a-cryptographically-secure-random-guid-in-net
-            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+           user = GenerateNewPasswordAndEmail(user, "Registration Successful!");
 
-            var onebyte = new byte[16];
-            rng.GetBytes(onebyte);
-            string password = new Guid(onebyte).ToString("N");
-            password = password.Substring(0,11);
-
-            // Create password hash & salt
-            byte[] passwordHash, passwordSalt;
-            CreatePasswordHash(password, out passwordHash, out passwordSalt);
-            user.PasswordHash = passwordHash;
-            user.PasswordSalt = passwordSalt;
-
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("WY", "weiyang35@hotmail.com"));
-            message.To.Add(new MailboxAddress("WY", user.Email));
-            message.Subject = "Registration successful";
-            message.Body = new TextPart("plain")
-            {
-                Text = "Your New Password: " + password
-            };
-
-            using (var client = new MailKit.Net.Smtp.SmtpClient())
-            {
-
-                //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
-                //client.AuthenticationMechanisms.Remove("XOAUTH2");
-                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-
-                //Google
-                client.Connect("smtp.office365.com", 587, false);
-                client.Authenticate("weiyang35@hotmail.com", "S9925187E");
-
-                // Start of provider specific settings
-                //Yhoo
-                // client.Connect("smtp.mail.yahoo.com", 587, false);
-                // client.Authenticate("yahoo", "password");
-
-                // End of provider specific settings
-                client.Send(message);
-                client.Disconnect(true);
-                client.Dispose();
-            }
             // Update user details
             user.CreatedAt = DateTime.Now;
             user.UpdatedAt = DateTime.Now;
             user.IsEnabled = true;
             user.ChangePassword = false;
             
-
             // Add to database
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
@@ -137,26 +94,42 @@ namespace FYP.Services
             if (user == null)
                 throw new AppException("User not found.");
 
-            if (userParam.Email != user.Email)
+            // check whether the update request is from 
+            // ChangePassword page or from UpdateDetails page 
+            // if the email is empty/null/"", it means that the 
+            // request is to change password only, therefore just update the password
+            if (string.IsNullOrWhiteSpace(userParam.Email))
             {
-                // username has changed, check if new username is taken
-                if (await _context.Users.AnyAsync(x => x.Email == userParam.Email))
-                    throw new AppException("Email " + userParam.Email + " is already in use.");
-            }
+                // update password if it was entered
+                if (!string.IsNullOrWhiteSpace(inPassword))
+                {
+                    byte[] passwordHash, passwordSalt;
+                    CreatePasswordHash(inPassword, out passwordHash, out passwordSalt);
+                    user.PasswordHash = passwordHash;
+                    user.PasswordSalt = passwordSalt;
 
-            // update user properties
-           
-            user.IsEnabled = userParam.IsEnabled;
-            user.ChangePassword = true;
-            // update password if it was entered
-            if (!string.IsNullOrWhiteSpace(inPassword))
+                    user.ChangePassword = true;
+                }
+            }
+            // otherwise, if there are fields like email, it means the request
+            // was sent from the UpdateDetails page from the user management pg
+            else
             {
-                byte[] passwordHash, passwordSalt;
-                CreatePasswordHash(inPassword, out passwordHash, out passwordSalt);
-                user.PasswordHash = passwordHash;
-                user.PasswordSalt = passwordSalt;
+                if (userParam.Email != user.Email)
+                {
+                    // email has changed, check if new email is taken
+                    if (await _context.Users.AnyAsync(x => x.Email == userParam.Email))
+                        throw new AppException("Email " + userParam.Email + " is already in use.");
+                    else
+                        user.Email = userParam.Email;
+                }
+                // update user properties
+                user.IsEnabled = userParam.IsEnabled;
+                user.Name = userParam.Name;
+                user.RoleId = userParam.RoleId;
+                user.UpdatedAt = DateTime.Now;
             }
-
+            
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
         }
@@ -214,10 +187,77 @@ namespace FYP.Services
             return true;
         }
 
-        public async Task<IEnumerable<Role>> GetAllRoles()
+        private static User GenerateNewPasswordAndEmail(User user, string messageSubject)
         {
 
+            //Generate random string for password.
+            //interesting article https://stackoverflow.com/questions/37170388/create-a-cryptographically-secure-random-guid-in-net
+            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+
+            var onebyte = new byte[16];
+            rng.GetBytes(onebyte);
+            string password = new Guid(onebyte).ToString("N");
+            password = password.Substring(0, 11);
+
+            // Create password hash & salt
+            byte[] passwordHash, passwordSalt;
+            CreatePasswordHash(password, out passwordHash, out passwordSalt);
+            user.PasswordHash = passwordHash;
+            user.PasswordSalt = passwordSalt;
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("WY", "weiyang35@hotmail.com"));
+            message.To.Add(new MailboxAddress("WY", user.Email));
+            message.Subject = messageSubject;
+            message.Body = new TextPart("plain")
+            {
+                Text = "Your New Password: " + password
+            };
+
+            using (var client = new MailKit.Net.Smtp.SmtpClient())
+            {
+
+                //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
+                //client.AuthenticationMechanisms.Remove("XOAUTH2");
+                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+
+                //Google
+                client.Connect("smtp.office365.com", 587, false);
+                client.Authenticate("weiyang35@hotmail.com", "S9925187E");
+
+                // Start of provider specific settings
+                //Yhoo
+                // client.Connect("smtp.mail.yahoo.com", 587, false);
+                // client.Authenticate("yahoo", "password");
+
+                // End of provider specific settings
+                client.Send(message);
+                client.Disconnect(true);
+                client.Dispose();
+            }
+            return user;
+        }
+
+        public async Task<IEnumerable<Role>> GetAllRoles()
+        {
             return await _context.Roles.ToListAsync();
+        }
+
+        public async Task<User> ChangePassword(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            user = GenerateNewPasswordAndEmail(user, "Reset Password");
+
+            // Update user details
+            user.UpdatedAt = DateTime.Now;
+            user.ChangePassword = false;
+
+            // Add to database
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            // returns user once done
+            return user;
         }
     }
 }

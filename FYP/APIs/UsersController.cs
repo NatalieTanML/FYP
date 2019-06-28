@@ -42,7 +42,6 @@ namespace FYP.APIs
             //inUser.CreatedById = int.Parse(User.FindFirst("userid").Value);
             inUser.CreatedById = 4;
 
-
             try
             {
                 // save new user
@@ -52,6 +51,26 @@ namespace FYP.APIs
                     newUserWithId.UserId,
                     signUpStatus = true,
                     message = "User registered successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                // return error message if there was an exception
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("changepassword/{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ChangePassword(int id)
+        {
+            try
+            {
+                await _userService.ChangePassword(id);
+
+                return Ok(new
+                {
+                    message = "Password has been resetted!" 
                 });
             }
             catch (Exception ex)
@@ -85,7 +104,10 @@ namespace FYP.APIs
             var user = await _userService.Authenticate(inUser.Email, inUser.Password);
 
             if (user == null)
-                return BadRequest(new { message = "Username or password is incorrect." });
+                return BadRequest(new { message = "Email or password is incorrect." });
+
+            if (user.IsEnabled == false)
+                return BadRequest(new { message = "Account is disabled. Please contact the administrator." });
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
@@ -114,7 +136,8 @@ namespace FYP.APIs
                     name = user.Name,
                     email = user.Email,
                     isEnabled = user.IsEnabled,
-                    changePassword = user.ChangePassword
+                    changePassword = user.ChangePassword,
+                    userRole = user.Role.RoleName
                 },
                 token = tokenString
             });
@@ -129,11 +152,12 @@ namespace FYP.APIs
             {
                 userList.Add(new
                 {
-                    userId = user.UserId,
-                    roleName = user.Role.RoleName,
-                    email = user.Email,
+                    id = user.UserId,
+                    role = user.Role.RoleName,
+                    username = user.Name,
                     isEnabled = user.IsEnabled,
-                    changePassword = user.ChangePassword
+                    createdBy = user.CreatedBy.Name,
+                    createdAt = user.CreatedAt
                 });
             }
             return new JsonResult(userList);
@@ -146,7 +170,12 @@ namespace FYP.APIs
             return Ok(new
             {
                 id = user.UserId,
-                email = user.Email
+                email = user.Email,
+                name = user.Name,
+                roleName = user.Role.RoleName,
+                roleId = user.Role.RoleId,
+                isEnabled = user.IsEnabled
+
             });
         }
 
@@ -166,20 +195,14 @@ namespace FYP.APIs
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(int id, IFormCollection inFormData)
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] User inUser)
         {
-            User user = new User()
-            {
-                ChangePassword = true,
-                UserId = id,
-                Email = inFormData["username"]
-                // update with disabled/not disabled
-            };
-            string password = inFormData["password"];
+            string password = inUser.Password;
+            inUser.UserId = id;
             try
             {
                 // save (excluding password update)
-                await _userService.Update(user, password);
+                await _userService.Update(inUser, password);
                 return Ok(new { message = "Completed user profile update." });
             }
             catch (Exception ex)
