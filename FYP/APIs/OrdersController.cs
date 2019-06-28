@@ -220,7 +220,7 @@ namespace FYP.APIs
             return Ok(new { guid = Guid.NewGuid().ToString("N").ToUpper() });
         }
 
-        [HttpPut("{isSuccessful:bool}")]
+        [HttpPut("status/{isSuccessful:bool}")]
         public async Task<IActionResult> UpdateStatuses([FromBody] List<int> orderIds, bool isSuccessful)
         {
             int updatedById = 4; // update to current user
@@ -236,7 +236,7 @@ namespace FYP.APIs
             }
         }
 
-        [HttpPut("{deliveryManId:int}")]
+        [HttpPut("deliveryman/{deliveryManId:int}")]
         public async Task<IActionResult> AssignDeliveryman([FromBody] List<int> orderIds, int deliveryManId)
         {
             int updatedById = 4; // update to current user
@@ -252,7 +252,7 @@ namespace FYP.APIs
             }
         }
 
-        [HttpPut]
+        [HttpPut("recipient")]
         public async Task<IActionResult> UpdateRecipient([FromBody] JObject data)
         {
             List<int> orderIds = data["orderIds"].ToObject<List<int>>();
