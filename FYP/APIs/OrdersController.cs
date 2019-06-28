@@ -176,6 +176,7 @@ namespace FYP.APIs
                                 optionId = i.Option.OptionId,
                                 optionType = i.Option.OptionType,
                                 optionValue = i.Option.OptionValue,
+                                skuNumber = i.Option.SKUNumber,
                                 product = (new
                                 {
                                     productId = i.Option.Product.ProductId,
