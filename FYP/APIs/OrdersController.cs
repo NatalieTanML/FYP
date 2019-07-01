@@ -90,6 +90,7 @@ namespace FYP.APIs
                         {
                             i.OrderItemId,
                             i.Quantity,
+                            i.OrderImageKey,
                             i.OrderImageUrl,
                             i.OptionId,
                             options = (new
@@ -169,6 +170,7 @@ namespace FYP.APIs
                         {
                             i.OrderItemId,
                             i.Quantity,
+                            i.OrderImageKey,
                             i.OrderImageUrl,
                             i.OptionId,
                             options = (new

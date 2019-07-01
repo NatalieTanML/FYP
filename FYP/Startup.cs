@@ -91,6 +91,9 @@ namespace FYP
             // add amazon s3 service
             services.AddSingleton<IS3Service, S3Service>();
             services.AddAWSService<IAmazonS3>();
+
+            // add lazycache
+            services.AddLazyCache();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

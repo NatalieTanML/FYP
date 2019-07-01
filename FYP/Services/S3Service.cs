@@ -29,7 +29,8 @@ namespace FYP.Services
         private const string tempBucket = "mayf-test-temp1";
         private const string permBucket = "mayf-test-perm1";
         private const string productBucket = "mayf-test-prod1";
-        private const string thumbnailBucket = "mayf-test-thumb1";
+        private const string cartThumbBucket = "mayf-test-thumb1";
+        private const string orderThumbBucket = "mayf-test-thumb-order1";
 
         public S3Service(IAmazonS3 client)
         {
@@ -77,7 +78,7 @@ namespace FYP.Services
                     }
 
                     outputStream.Dispose();
-                    return "https://" + thumbnailBucket + ".s3-ap-southeast-1.amazonaws.com/" + guid;
+                    return "https://" + cartThumbBucket + ".s3-ap-southeast-1.amazonaws.com/" + guid;
                 }
                 catch (AmazonS3Exception ex)
                 {
@@ -126,7 +127,7 @@ namespace FYP.Services
                         images.Add(new ProductImage
                         {
                             ImageKey = FileName,
-                            ImageUrl = "https://" + productBucket + ".s3-ap-southeast-1.amazonaws.com/" + FileName
+                            ImageUrl = "https://" + orderThumbBucket + ".s3-ap-southeast-1.amazonaws.com/" + FileName
                         });
 
                         var fileTransferUtilityRequest = new TransferUtilityUploadRequest

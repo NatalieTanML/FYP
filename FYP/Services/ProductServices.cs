@@ -17,6 +17,7 @@ using Amazon.S3.Transfer;
 using Amazon.S3;
 using System.Net;
 using System.Globalization;
+using LazyCache;
 
 namespace FYP.Services
 {
@@ -36,30 +37,38 @@ namespace FYP.Services
         private ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
         private readonly IS3Service _s3Service;
-        
+        private readonly IAppCache _cache;
+
         public ProductService(ApplicationDbContext context, 
             IOptions<AppSettings> appSettings,
-            IS3Service s3Service)
+            IS3Service s3Service,
+            IAppCache appCache)
         {
             _context = context;
             _appSettings = appSettings.Value;
             _s3Service = s3Service;
+            _cache = appCache;
         }
 
         public async Task<IEnumerable<Product>> GetAll()
         {
             // returns full list of products including join with relevant tables
-            return await _context.Products
+            // define a func to get the products but do not Execute() it
+            Func<Task<IEnumerable<Product>>> productGetter = async () => await _context.Products
                 .Include(product => product.Category)
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
                 .ThenInclude(option => option.ProductImages)
                 .ToListAsync();
+
+            // get the results from the cache based on a unique key, or 
+            // execute the func and cache the results
+            return await _cache.GetOrAddAsync("AllProducts.Get", productGetter, DateTimeOffset.Now.AddHours(8));
         }
 
         public async Task<IEnumerable<Product>> GetByPage(int pageNumber, int productsPerPage)
         {
-            return await _context.Products
+            Func<Task<IEnumerable<Product>>> productGetter = async () => await _context.Products
                 .Skip((pageNumber - 1) * productsPerPage)
                 .Take(productsPerPage)
                 .Include(product => product.Category)
@@ -67,6 +76,8 @@ namespace FYP.Services
                 .Include(product => product.Options)
                 .ThenInclude(o => o.ProductImages)
                 .ToListAsync();
+
+            return await _cache.GetOrAddAsync("ProductsByPage.Get", productGetter, DateTimeOffset.Now.AddHours(8));
         }
 
         public async Task<int> GetTotalNumberOfProducts()
@@ -77,12 +88,14 @@ namespace FYP.Services
         public async Task<Product> GetById(int id)
         {
             // searches product, including join with relevant tables
-            return await _context.Products
+            Func<Task<Product>> productGetter = async () => await _context.Products
                 .Include(product => product.Category)
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
                 .ThenInclude(option => option.ProductImages)
                 .FirstOrDefaultAsync(p => p.ProductId == id);
+
+            return await _cache.GetOrAddAsync($"ProductById.Get.{id}", productGetter, DateTime.Now.AddHours(8));
         }
 
         public async Task<Product> Create(Product product)
