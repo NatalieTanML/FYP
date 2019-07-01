@@ -31,6 +31,7 @@ namespace FYP.Services
         Task UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful);
         Task AssignDeliveryman(List<int> orderIds, int deliveryManId, int updatedById);
         Task UpdateRecipient(List<int> orderIds, OrderRecipient recipient, int updatedById);
+        Task<IEnumerable<Status>> GetAllStatus();
     }
 
     public class OrderService : IOrderService
@@ -168,6 +169,15 @@ namespace FYP.Services
             {
                 throw new AppException("Unable to create product record.", new { message = ex.Message });
             }
+        }
+
+        public async Task<IEnumerable<Status>> GetAllStatus()
+        {
+            List<Status> statuses = await _context.Status.ToListAsync();
+
+            return statuses;
+
+
         }
 
         public async Task UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful)
@@ -357,5 +367,7 @@ namespace FYP.Services
                 }
             }
         }
+
+      
     }
 }
