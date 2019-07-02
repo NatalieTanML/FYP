@@ -66,7 +66,7 @@ namespace FYP.APIs
         }
 
         // this method is called when the admin adds a new product
-        // takes in a collection of blob files (image files)
+        // it takes in a collection of blob files (image files) and
         // returns a list of ProductImage objects, that will be added
         // to the next json call to CreateProduct in ProductsController.
         // the list returned contains the image key + url for each image
@@ -81,6 +81,26 @@ namespace FYP.APIs
                 {
                     message = "Uploaded product images",
                     productImages = outImages
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // returns a presigned URL for access to private bucket objects
+        [HttpPost("url/{guid}")]
+        [AllowAnonymous]
+        public IActionResult GetPresignedImageURL(string guid)
+        {
+            try
+            {
+                string url = _s3Service.GetPresignedImageURL(guid);
+                return Ok(new
+                {
+                    message = "Image GET successful",
+                    imgUrl = url
                 });
             }
             catch (Exception ex)

@@ -18,10 +18,11 @@ namespace FYP.Services
 {
     public interface IS3Service
     {
+        string GetPresignedImageURL(string guid);
         Task<string> UploadImageAsync(IFormFile image, string guid);
         Task<List<ProductImage>> UploadProductImagesAsync(ICollection<IFormFile> imageFiles);
         Task<List<string>> CopyImagesAsync(List<string> imgKeys);
-        Task DeleteImages(List<string> keys);
+        Task DeleteImagesAsync(List<string> keys);
     }
     public class S3Service : IS3Service
     {
@@ -29,12 +30,40 @@ namespace FYP.Services
         private const string tempBucket = "mayf-test-temp1";
         private const string permBucket = "mayf-test-perm1";
         private const string productBucket = "mayf-test-prod1";
-        private const string cartThumbBucket = "mayf-test-thumb1";
-        private const string orderThumbBucket = "mayf-test-thumb-order1";
+        private const string thumbBucket = "mayf-test-thumb1";
 
         public S3Service(IAmazonS3 client)
         {
             _client = client;
+        }
+
+        public string GetPresignedImageURL(string guid)
+        {
+            string urlString = "";
+            try
+            {
+                GetPreSignedUrlRequest request = new GetPreSignedUrlRequest
+                {
+                    BucketName = permBucket,
+                    Key = guid,
+                    Expires = DateTime.Now.AddMinutes(5),
+                    // if you want to download directly on link click
+                    //ResponseHeaderOverrides = new ResponseHeaderOverrides
+                    //{
+                    //    ContentDisposition = "attachment; filename=" + guid
+                    //}
+                };
+                urlString = _client.GetPreSignedURL(request);
+            }
+            catch (AmazonS3Exception e)
+            {
+                Console.WriteLine("Error encountered on server. Message:'{0}' when writing an object", e.Message);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
+            }
+            return urlString;
         }
 
         public async Task<string> UploadImageAsync(IFormFile image, string guid)
@@ -78,7 +107,7 @@ namespace FYP.Services
                     }
 
                     outputStream.Dispose();
-                    return "https://" + cartThumbBucket + ".s3-ap-southeast-1.amazonaws.com/" + guid;
+                    return "https://" + thumbBucket + ".s3-ap-southeast-1.amazonaws.com/" + guid;
                 }
                 catch (AmazonS3Exception ex)
                 {
@@ -127,7 +156,7 @@ namespace FYP.Services
                         images.Add(new ProductImage
                         {
                             ImageKey = FileName,
-                            ImageUrl = "https://" + orderThumbBucket + ".s3-ap-southeast-1.amazonaws.com/" + FileName
+                            ImageUrl = "https://" + productBucket + ".s3-ap-southeast-1.amazonaws.com/" + FileName
                         });
 
                         var fileTransferUtilityRequest = new TransferUtilityUploadRequest
@@ -188,7 +217,7 @@ namespace FYP.Services
             return imgUrls;
         }
 
-        public async Task DeleteImages(List<string> keys)
+        public async Task DeleteImagesAsync(List<string> keys)
         {
             List<KeyVersion> delKeys = new List<KeyVersion>();
             foreach (string key in keys)
