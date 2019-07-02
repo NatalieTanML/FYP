@@ -203,7 +203,7 @@ namespace FYP.Services
                         DestinationKey = key
                     };
                     await _client.CopyObjectAsync(request);
-                    imgUrls.Add("https://" + permBucket + ".s3-ap-southeast-1.amazonaws.com/" + key);
+                    imgUrls.Add("https://" + thumbBucket + ".s3-ap-southeast-1.amazonaws.com/" + key);
                 }
             }
             catch (AmazonS3Exception ex)
