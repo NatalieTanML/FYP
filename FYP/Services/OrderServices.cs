@@ -27,11 +27,13 @@ namespace FYP.Services
     {
         Task<IEnumerable<Order>> GetAll();
         Task<Order> GetById(int id);
+        Task<IEnumerable<Status>> GetAllStatus();
+        Task<object> GetOrderTracking(string refNo);
         Task<Order> Create(Order order);
         Task<List<object>> UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful);
         Task AssignDeliveryman(List<int> orderIds, int deliveryManId, int updatedById);
         Task UpdateRecipient(List<int> orderIds, OrderRecipient recipient, int updatedById);
-        Task<IEnumerable<Status>> GetAllStatus();
+        
     }
 
     public class OrderService : IOrderService
@@ -172,10 +174,23 @@ namespace FYP.Services
         public async Task<IEnumerable<Status>> GetAllStatus()
         {
             List<Status> statuses = await _context.Status.ToListAsync();
-
             return statuses;
+        }
 
+        public async Task<object> GetOrderTracking(string refNo)
+        {
+            var order = await _context.Orders
+                .Where(o => o.ReferenceNo == refNo)
+                .Include(o => o.Status)
+                .FirstOrDefaultAsync();
 
+            return new
+            {
+                orderId = order.OrderId,
+                statusId = order.StatusId,
+                statusName = order.Status.StatusName,
+                updatedAt = order.UpdatedAt
+            };
         }
 
         public async Task<List<object>> UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful)

@@ -231,8 +231,26 @@ namespace FYP.APIs
                 });
 
             }
-
             return new JsonResult(statusList);
+        }
+
+        [HttpGet("track/{refNo}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetOrderTracking(string refNo)
+        {
+            try
+            {
+                var trackingInfo = await _orderService.GetOrderTracking(refNo);
+                return Ok(new
+                {
+                    message = "Order tracking received successfully!",
+                    trackInfo = trackingInfo
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPost("guid")]

@@ -18,7 +18,7 @@ namespace FYP.Services
 {
     public interface IS3Service
     {
-        string GetPresignedImageURL(string guid);
+        List<string> GetPresignedImageURLs(List<string> guids);
         Task<string> UploadImageAsync(IFormFile image, string guid);
         Task<List<ProductImage>> UploadProductImagesAsync(ICollection<IFormFile> imageFiles);
         Task<List<string>> CopyImagesAsync(List<string> imgKeys);
@@ -37,23 +37,26 @@ namespace FYP.Services
             _client = client;
         }
 
-        public string GetPresignedImageURL(string guid)
+        public List<string> GetPresignedImageURLs(List<string> guids)
         {
-            string urlString = "";
+            List<string> urlStrings = new List<string>();
             try
             {
-                GetPreSignedUrlRequest request = new GetPreSignedUrlRequest
+                foreach (string guid in guids)
                 {
-                    BucketName = permBucket,
-                    Key = guid,
-                    Expires = DateTime.Now.AddMinutes(5),
-                    // if you want to download directly on link click
-                    //ResponseHeaderOverrides = new ResponseHeaderOverrides
-                    //{
-                    //    ContentDisposition = "attachment; filename=" + guid
-                    //}
-                };
-                urlString = _client.GetPreSignedURL(request);
+                    GetPreSignedUrlRequest request = new GetPreSignedUrlRequest
+                    {
+                        BucketName = permBucket,
+                        Key = guid,
+                        Expires = DateTime.Now.AddMinutes(5),
+                        // if you want to download directly on link click/open
+                        //ResponseHeaderOverrides = new ResponseHeaderOverrides
+                        //{
+                        //    ContentDisposition = "attachment; filename=" + guid
+                        //}
+                    };
+                    urlStrings.Add(_client.GetPreSignedURL(request));
+                }
             }
             catch (AmazonS3Exception e)
             {
@@ -63,7 +66,7 @@ namespace FYP.Services
             {
                 Console.WriteLine("Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
             }
-            return urlString;
+            return urlStrings;
         }
 
         public async Task<string> UploadImageAsync(IFormFile image, string guid)

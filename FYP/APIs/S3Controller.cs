@@ -90,17 +90,17 @@ namespace FYP.APIs
         }
 
         // returns a presigned URL for access to private bucket objects
-        [HttpPost("url/{guid}")]
+        [HttpPost("url")]
         [AllowAnonymous]
-        public IActionResult GetPresignedImageURL(string guid)
+        public IActionResult GetPresignedImageURLs([FromBody] List<string> guids)
         {
             try
             {
-                string url = _s3Service.GetPresignedImageURL(guid);
+                List<string> urls = _s3Service.GetPresignedImageURLs(guids);
                 return Ok(new
                 {
                     message = "Image GET successful",
-                    imgUrl = url
+                    imgUrls = urls
                 });
             }
             catch (Exception ex)
