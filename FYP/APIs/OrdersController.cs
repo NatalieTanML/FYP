@@ -227,7 +227,7 @@ namespace FYP.APIs
             {
                 statusList.Add(new {
                     statusId = status.StatusId,
-                   statusName = status.StatusName
+                    statusName = status.StatusName
                 });
 
             }
@@ -248,8 +248,13 @@ namespace FYP.APIs
             int updatedById = 4; // update to current user
             try
             {
-                await _orderService.UpdateStatuses(orderIds, updatedById, isSuccessful);
-                return Ok(new { message = "Updated order(s) status(es) successfully!" });
+                var updatedOrders = await _orderService.UpdateStatuses(orderIds, updatedById, isSuccessful);
+
+                return Ok(new
+                {
+                    message = "Updated orders statuses successfully!",
+                    orders = updatedOrders
+                });
             }
             catch (Exception ex)
             {

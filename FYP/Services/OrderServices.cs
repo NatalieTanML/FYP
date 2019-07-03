@@ -28,7 +28,7 @@ namespace FYP.Services
         Task<IEnumerable<Order>> GetAll();
         Task<Order> GetById(int id);
         Task<Order> Create(Order order);
-        Task UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful);
+        Task<List<object>> UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful);
         Task AssignDeliveryman(List<int> orderIds, int deliveryManId, int updatedById);
         Task UpdateRecipient(List<int> orderIds, OrderRecipient recipient, int updatedById);
         Task<IEnumerable<Status>> GetAllStatus();
@@ -42,8 +42,6 @@ namespace FYP.Services
         private readonly IOrderHub _orderHub;
         private readonly IS3Service _s3Service;
 
-        private const string bucketName = "20190507test1";
-        private const string FileName = "image3.jpg";
         private readonly string encryptionKey;
         
         public OrderService(ApplicationDbContext context,
@@ -180,15 +178,23 @@ namespace FYP.Services
 
         }
 
-        public async Task UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful)
+        public async Task<List<object>> UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful)
         {
             // grabs valid orders with matching id
-            var orders = await _context.Orders.Where(i => orderIds.Contains(i.OrderId)).ToListAsync();
+            var orders = await _context.Orders
+                .Where(i => orderIds.Contains(i.OrderId))
+                .Include(o => o.Status)
+                .ToListAsync();
+
+            var statuses = await _context.Status
+                .AsNoTracking()
+                .ToListAsync();
 
             // if orders does not exist
             if (orders == null)
                 throw new AppException("Orders not found.");
 
+            List<object> updated = new List<object>();
             foreach (Order order in orders)
             {
                 // get current order's status
@@ -249,10 +255,18 @@ namespace FYP.Services
                 order.UpdatedById = updatedById;
 
                 _context.Orders.Update(order);
+
+                updated.Add(new
+                {
+                    orderId = order.OrderId,
+                    statusId = order.StatusId,
+                    statusName = statuses.Where(s => s.StatusId == order.StatusId).FirstOrDefault().StatusName
+                });
             }
             
             await _context.SaveChangesAsync();
             await _orderHub.NotifyMultipleChanges(orders);
+            return updated;
         }
 
         public async Task AssignDeliveryman(List<int> orderIds, int deliveryManId, int updatedById)
