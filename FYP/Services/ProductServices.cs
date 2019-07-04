@@ -106,9 +106,6 @@ namespace FYP.Services
             
             try
             {
-                // upload images to s3
-                //await _s3Service.UploadImageAsync("https://20190507test1.s3-ap-southeast-1.amazonaws.com/image.jpg");
-                
                 // ensure the prices are properly entered
                 List<DiscountPrice> newPrices = new List<DiscountPrice>();
                 foreach (DiscountPrice price in product.DiscountPrices)
@@ -131,8 +128,8 @@ namespace FYP.Services
                     {
                         newImages.Add(new ProductImage
                         {
-                            ImageKey = "img.jpg",
-                            ImageUrl = "url to be updated"
+                            ImageKey = img.ImageKey,
+                            ImageUrl = img.ImageUrl
                         });
                     };
                     newOptions.Add(new Option
@@ -177,7 +174,6 @@ namespace FYP.Services
             {
                 throw new AppException("Unable to create product record.", new { message = ex.Message });
             }
-            
         }
 
         public async Task Update(Product productParam)
@@ -252,7 +248,6 @@ namespace FYP.Services
                         MinimumQuantity = int.Parse(op.MinimumQuantity.ToString()),
                         ProductImages = newImages
                     });
-                    
                 }
 
                 List<string> imagesToDelete = new List<string>();
