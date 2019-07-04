@@ -338,7 +338,7 @@ namespace FYP.Services
 
                 // finally, delete images from s3
                 if (imagesToDelete.Count > 0)
-                    await _s3Service.DeleteImagesAsync(imagesToDelete);
+                    await _s3Service.DeleteProductImagesAsync(imagesToDelete);
             }
             catch (Exception ex)
             {
