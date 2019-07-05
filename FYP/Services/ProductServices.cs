@@ -77,7 +77,7 @@ namespace FYP.Services
                 .ThenInclude(o => o.ProductImages)
                 .ToListAsync();
 
-            return await _cache.GetOrAddAsync("ProductsByPage.Get", productGetter, DateTimeOffset.Now.AddHours(8));
+            return await _cache.GetOrAddAsync($"ProductsByPage.Get.{pageNumber}", productGetter, DateTimeOffset.Now.AddHours(8));
         }
 
         public async Task<int> GetTotalNumberOfProducts()
