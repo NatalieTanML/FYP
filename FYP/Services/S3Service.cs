@@ -22,7 +22,8 @@ namespace FYP.Services
         Task<string> UploadImageAsync(IFormFile image, string guid);
         Task<List<ProductImage>> UploadProductImagesAsync(List<ProductImage> imageFiles);
         Task<List<string>> CopyImagesAsync(List<string> imgKeys);
-        Task DeleteImagesAsync(List<string> keys);
+        Task DeleteProductImagesAsync(List<string> keys);
+        Task DeleteCustomerImagesAsync(List<string> keys);
     }
     public class S3Service : IS3Service
     {
@@ -50,10 +51,10 @@ namespace FYP.Services
                         Key = guid,
                         Expires = DateTime.Now.AddMinutes(5),
                         // if you want to download directly on link click/open
-                        //ResponseHeaderOverrides = new ResponseHeaderOverrides
-                        //{
-                        //    ContentDisposition = "attachment; filename=" + guid
-                        //}
+                        ResponseHeaderOverrides = new ResponseHeaderOverrides
+                        {
+                            ContentDisposition = "attachment; filename=" + guid
+                        }
                     };
                     urlStrings.Add(_client.GetPreSignedURL(request));
                 }
@@ -218,7 +219,7 @@ namespace FYP.Services
             return imgUrls;
         }
 
-        public async Task DeleteImagesAsync(List<string> keys)
+        public async Task DeleteProductImagesAsync(List<string> keys)
         {
             List<KeyVersion> delKeys = new List<KeyVersion>();
             foreach (string key in keys)
@@ -229,6 +230,30 @@ namespace FYP.Services
             DeleteObjectsRequest multiObjectDeleteRequest = new DeleteObjectsRequest
             {
                 BucketName = productBucket,
+                Objects = delKeys // This includes the object keys and null version IDs.
+            };
+            try
+            {
+                DeleteObjectsResponse response = await _client.DeleteObjectsAsync(multiObjectDeleteRequest);
+                Console.WriteLine("Successfully deleted all the {0} items", response.DeletedObjects.Count);
+            }
+            catch (DeleteObjectsException e)
+            {
+                Console.WriteLine("Unable to delete {0} objects out of {1} objects.", e.Response.DeleteErrors.Count, e.Response.DeletedObjects.Count);
+            }
+        }
+
+        public async Task DeleteCustomerImagesAsync(List<string> keys)
+        {
+            List<KeyVersion> delKeys = new List<KeyVersion>();
+            foreach (string key in keys)
+            {
+                delKeys.Add(new KeyVersion { Key = key });
+            }
+
+            DeleteObjectsRequest multiObjectDeleteRequest = new DeleteObjectsRequest
+            {
+                BucketName = permBucket,
                 Objects = delKeys // This includes the object keys and null version IDs.
             };
             try
