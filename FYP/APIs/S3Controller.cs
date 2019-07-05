@@ -72,7 +72,7 @@ namespace FYP.APIs
         // the list returned contains the image key + url for each image
         [HttpPost("product")]
         [AllowAnonymous]
-        public async Task<IActionResult> UploadProductImages(ICollection<IFormFile> imageFiles)
+        public async Task<IActionResult> UploadProductImages(List<ProductImage> imageFiles)
         {
             try
             {
