@@ -14,7 +14,7 @@ namespace FYP.Models
         public string ImageUrl { get; set; }
 
         [NotMapped]
-        public IFormFile ImageFile { get; set; }
+        public FormFileWrapper ImageFile { get; set; }
         
         public int OptionId { get; set; }
         public Option Option { get; set; }
