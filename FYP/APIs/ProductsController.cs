@@ -338,6 +338,26 @@ namespace FYP.APIs
             }
         }
 
+        [AllowAnonymous]
+        [HttpPut("stock/{id:int}/{amount:int}")]
+        public async Task<IActionResult> UpdateStock(int id, int amount)
+        {
+            // id is for option id
+            try
+            {
+                await _productService.UpdateStock(id, amount);
+                return Ok(new
+                {
+                    message = "Updated stock successfully!"
+                });
+            }
+            catch (Exception ex)
+            {
+                // return error message 
+                throw new AppException("Unable to update stock.", new { message = ex.Message });
+            }
+        }
+
         // technically can't delete products, only make them "expire"
         [AllowAnonymous]
         [HttpDelete("{id}")]

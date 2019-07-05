@@ -29,6 +29,7 @@ namespace FYP.Services
         Task<Product> GetById(int id);
         Task<Product> Create(Product product);
         Task Update(Product productParam);
+        Task UpdateStock(int id, int stockUpdate);
         Task Delete(int id);
     }
 
@@ -343,6 +344,33 @@ namespace FYP.Services
             catch (Exception ex)
             {
                 throw new AppException("Unable to update product record.", new { message = ex.Message });
+            }
+        }
+
+        public async Task UpdateStock(int id, int stockUpdate)
+        {
+            // find option to update
+            var option = await _context.Options.FindAsync(id);
+
+            // if product does not exist
+            if (option == null)
+                throw new AppException("Option not found.");
+
+            try
+            {
+                // update the stock
+                // stockUpdate should be the amount of stock added/removed
+                // e.g. current qty = 100, stockUpdate = 30 
+                // 100 + 30 = 130 (new stock amt, add 30)
+                // e.g.2 curr qty = 100, stockUpdate = -10
+                // 100 + -10 = 90 (new stock amt, minus 10)
+                option.CurrentQuantity += stockUpdate;
+                _context.Options.Update(option);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new AppException("Unable to update option quantity.", new { message = ex.Message });
             }
         }
 

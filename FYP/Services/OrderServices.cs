@@ -109,21 +109,24 @@ namespace FYP.Services
         {
             try
             {
-                // update & check stock
-                foreach (OrderItem orderItem in order.OrderItems)
-                {
-                    var currentOption = await _context.Options.FirstOrDefaultAsync(o => o.OptionId == orderItem.OptionId);
+                //// update & check stock
+                //// assume that customers can still place order even if no stock
+                //// order will be put into "preorder" or similar state, since 
+                //// stock can be replenished easily (items are not limited/rare).
+                //foreach (OrderItem orderItem in order.OrderItems)
+                //{
+                //    var currentOption = await _context.Options.FirstOrDefaultAsync(o => o.OptionId == orderItem.OptionId);
                     
-                    if (currentOption.CurrentQuantity < orderItem.Quantity)
-                    {
-                        throw new AppException("There is not enough stock for {0}.", currentOption.SKUNumber);
-                    }
-                    else
-                    {
-                        currentOption.CurrentQuantity -= orderItem.Quantity;
-                        _context.Options.Update(currentOption);
-                    }
-                }
+                //    if (currentOption.CurrentQuantity < orderItem.Quantity)
+                //    {
+                //        throw new AppException("There is not enough stock for {0}.", currentOption.SKUNumber);
+                //    }
+                //    else
+                //    {
+                //        currentOption.CurrentQuantity -= orderItem.Quantity;
+                //        _context.Options.Update(currentOption);
+                //    }
+                //}
 
                 List<string> imgKeys = new List<string>();
                 foreach (OrderItem item in order.OrderItems)
