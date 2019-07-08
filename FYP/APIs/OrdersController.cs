@@ -215,25 +215,7 @@ namespace FYP.APIs
                 throw new AppException("Unable to create order record.", new { message = ex.Message });
             }
         }
-
-        [HttpGet("getOrderStatus")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetOrderStatus()
-        {
-            var statuses = await _orderService.GetAllStatus();
-
-            List<object> statusList = new List<object>();
-            foreach (Status status in statuses)
-            {
-                statusList.Add(new {
-                    statusId = status.StatusId,
-                    statusName = status.StatusName
-                });
-
-            }
-            return new JsonResult(statusList);
-        }
-
+        
         [HttpGet("track/{refNo}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetOrderTracking(string refNo)
