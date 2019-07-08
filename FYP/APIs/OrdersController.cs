@@ -90,6 +90,7 @@ namespace FYP.APIs
                         {
                             i.OrderItemId,
                             i.Quantity,
+                            i.OrderImageKey,
                             i.OrderImageUrl,
                             i.OptionId,
                             options = (new
@@ -169,6 +170,7 @@ namespace FYP.APIs
                         {
                             i.OrderItemId,
                             i.Quantity,
+                            i.OrderImageKey,
                             i.OrderImageUrl,
                             i.OptionId,
                             options = (new
@@ -214,6 +216,43 @@ namespace FYP.APIs
             }
         }
 
+        [HttpGet("getOrderStatus")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetOrderStatus()
+        {
+            var statuses = await _orderService.GetAllStatus();
+
+            List<object> statusList = new List<object>();
+            foreach (Status status in statuses)
+            {
+                statusList.Add(new {
+                    statusId = status.StatusId,
+                    statusName = status.StatusName
+                });
+
+            }
+            return new JsonResult(statusList);
+        }
+
+        [HttpGet("track/{refNo}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetOrderTracking(string refNo)
+        {
+            try
+            {
+                var trackingInfo = await _orderService.GetOrderTracking(refNo);
+                return Ok(new
+                {
+                    message = "Order tracking received successfully!",
+                    trackInfo = trackingInfo
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("guid")]
         [AllowAnonymous]
         public IActionResult GenerateGUID()
@@ -247,8 +286,13 @@ namespace FYP.APIs
             int updatedById = 4; // update to current user
             try
             {
-                await _orderService.UpdateStatuses(orderIds, updatedById, isSuccessful);
-                return Ok(new { message = "Updated order(s) status(es) successfully!" });
+                var updatedOrders = await _orderService.UpdateStatuses(orderIds, updatedById, isSuccessful);
+
+                return Ok(new
+                {
+                    message = "Updated orders statuses successfully!",
+                    orders = updatedOrders
+                });
             }
             catch (Exception ex)
             {

@@ -27,36 +27,36 @@ namespace FYP.Services
     {
         Task<IEnumerable<Order>> GetAll();
         Task<Order> GetById(int id);
+        Task<IEnumerable<Status>> GetAllStatus();
+        Task<object> GetOrderTracking(string refNo);
         Task<Order> Create(Order order);
-        Task UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful);
+        Task<List<object>> UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful);
         Task AssignDeliveryman(List<int> orderIds, int deliveryManId, int updatedById);
         Task UpdateRecipient(List<int> orderIds, OrderRecipient recipient, int updatedById);
-        Task<IEnumerable<Status>> GetAllStatus();
+        
     }
 
     public class OrderService : IOrderService
     {
         private ApplicationDbContext _context;
-        private readonly IOrderHub _orderHub;
         private readonly AppSettings _appSettings;
-        private readonly IAmazonS3 _client;
         private readonly IConfiguration _configuration;
+        private readonly IOrderHub _orderHub;
+        private readonly IS3Service _s3Service;
 
-        private const string bucketName = "20190507test1";
-        private const string FileName = "image3.jpg";
         private readonly string encryptionKey;
         
-        public OrderService(ApplicationDbContext context, 
-            IOrderHub orderHub, 
+        public OrderService(ApplicationDbContext context,
             IOptions<AppSettings> appSettings,
-            IAmazonS3 client,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IOrderHub orderHub, 
+            IS3Service s3Service)
         {
             _context = context;
-            _orderHub = orderHub;
             _appSettings = appSettings.Value;
-            _client = client;
             _configuration = configuration;
+            _orderHub = orderHub;
+            _s3Service = s3Service;
 
             // get encryption key for email
             encryptionKey = _configuration.GetValue<string>("Encryption:Key");
@@ -109,13 +109,38 @@ namespace FYP.Services
         {
             try
             {
-                // upload images to s3
-                //await _s3Service.UploadImageAsync("https://20190507test1.s3-ap-southeast-1.amazonaws.com/image.jpg");
+                //// update & check stock
+                //// assume that customers can still place order even if no stock
+                //// order will be put into "preorder" or similar state, since 
+                //// stock can be replenished easily (items are not limited/rare).
+                //foreach (OrderItem orderItem in order.OrderItems)
+                //{
+                //    var currentOption = await _context.Options.FirstOrDefaultAsync(o => o.OptionId == orderItem.OptionId);
+                    
+                //    if (currentOption.CurrentQuantity < orderItem.Quantity)
+                //    {
+                //        throw new AppException("There is not enough stock for {0}.", currentOption.SKUNumber);
+                //    }
+                //    else
+                //    {
+                //        currentOption.CurrentQuantity -= orderItem.Quantity;
+                //        _context.Options.Update(currentOption);
+                //    }
+                //}
 
-                // put the new images url into object
+                List<string> imgKeys = new List<string>();
                 foreach (OrderItem item in order.OrderItems)
                 {
-                    item.OrderImageUrl = "https://20190507test1.s3-ap-southeast-1.amazonaws.com/" + "image5" + ".jpg";
+                    imgKeys.Add(item.OrderImageKey);
+                }
+
+                // make images on s3 permanent
+                List<string> imgUrls = await _s3Service.CopyImagesAsync(imgKeys);
+
+                // put the new images url into object
+                for (int i = 0; i < order.OrderItems.Count; i++)
+                {
+                    order.OrderItems.ElementAt(i).OrderImageUrl = imgUrls.ElementAt(i);
                 }
                 
                 // create new order object to be added
@@ -152,21 +177,42 @@ namespace FYP.Services
         public async Task<IEnumerable<Status>> GetAllStatus()
         {
             List<Status> statuses = await _context.Status.ToListAsync();
-
             return statuses;
-
-
         }
 
-        public async Task UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful)
+        public async Task<object> GetOrderTracking(string refNo)
+        {
+            var order = await _context.Orders
+                .Where(o => o.ReferenceNo == refNo)
+                .Include(o => o.Status)
+                .FirstOrDefaultAsync();
+
+            return new
+            {
+                orderId = order.OrderId,
+                statusId = order.StatusId,
+                statusName = order.Status.StatusName,
+                updatedAt = order.UpdatedAt
+            };
+        }
+
+        public async Task<List<object>> UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful)
         {
             // grabs valid orders with matching id
-            var orders = await _context.Orders.Where(i => orderIds.Contains(i.OrderId)).ToListAsync();
+            var orders = await _context.Orders
+                .Where(i => orderIds.Contains(i.OrderId))
+                .Include(o => o.Status)
+                .ToListAsync();
+
+            var statuses = await _context.Status
+                .AsNoTracking()
+                .ToListAsync();
 
             // if orders does not exist
             if (orders == null)
                 throw new AppException("Orders not found.");
 
+            List<object> updated = new List<object>();
             foreach (Order order in orders)
             {
                 // get current order's status
@@ -227,10 +273,18 @@ namespace FYP.Services
                 order.UpdatedById = updatedById;
 
                 _context.Orders.Update(order);
+
+                updated.Add(new
+                {
+                    orderId = order.OrderId,
+                    statusId = order.StatusId,
+                    statusName = statuses.Where(s => s.StatusId == order.StatusId).FirstOrDefault().StatusName
+                });
             }
             
             await _context.SaveChangesAsync();
             await _orderHub.NotifyMultipleChanges(orders);
+            return updated;
         }
 
 
@@ -346,5 +400,7 @@ namespace FYP.Services
                 }
             }
         }
+
+      
     }
 }

@@ -49,6 +49,11 @@ namespace FYP.Services
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<Role>> GetAllRoles()
+        {
+            return await _context.Roles.ToListAsync();
+        }
+
         public async Task<User> GetById(int id)
         {
             return await _context.Users.Include(user => user.Role).FirstOrDefaultAsync(u => u.UserId == id);
@@ -163,6 +168,23 @@ namespace FYP.Services
             }
         }
 
+        public async Task<User> ChangePassword(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            user = GenerateNewPasswordAndEmail(user, "Reset Password");
+
+            // Update user details
+            user.UpdatedAt = DateTime.Now;
+            user.ChangePassword = false;
+
+            // Add to database
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            // returns user once done
+            return user;
+        }
+
         // private helper methods
         private static void CreatePasswordHash(string inPassword, out byte[] inPasswordHash, out byte[] inPasswordSalt)
         {
@@ -198,7 +220,6 @@ namespace FYP.Services
 
         private static User GenerateNewPasswordAndEmail(User user, string messageSubject)
         {
-
             //Generate random string for password.
             //interesting article https://stackoverflow.com/questions/37170388/create-a-cryptographically-secure-random-guid-in-net
             RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
@@ -244,28 +265,6 @@ namespace FYP.Services
                 client.Disconnect(true);
                 client.Dispose();
             }
-            return user;
-        }
-
-        public async Task<IEnumerable<Role>> GetAllRoles()
-        {
-            return await _context.Roles.ToListAsync();
-        }
-
-        public async Task<User> ChangePassword(int id)
-        {
-            var user = await _context.Users.FindAsync(id);
-            user = GenerateNewPasswordAndEmail(user, "Reset Password");
-
-            // Update user details
-            user.UpdatedAt = DateTime.Now;
-            user.ChangePassword = false;
-
-            // Add to database
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
-
-            // returns user once done
             return user;
         }
     }

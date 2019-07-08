@@ -18,10 +18,12 @@ namespace FYP.Services
 {
     public interface IS3Service
     {
+        List<string> GetPresignedImageURLs(List<string> guids);
         Task<string> UploadImageAsync(IFormFile image, string guid);
-        Task<List<ProductImage>> UploadProductImagesAsync(ICollection<IFormFile> imageFiles);
+        Task<List<ProductImage>> UploadProductImagesAsync(List<ProductImage> imageFiles);
         Task<List<string>> CopyImagesAsync(List<string> imgKeys);
-        Task DeleteImages(List<string> keys);
+        Task DeleteProductImagesAsync(List<string> keys);
+        Task DeleteCustomerImagesAsync(List<string> keys);
     }
     public class S3Service : IS3Service
     {
@@ -29,11 +31,43 @@ namespace FYP.Services
         private const string tempBucket = "mayf-test-temp1";
         private const string permBucket = "mayf-test-perm1";
         private const string productBucket = "mayf-test-prod1";
-        private const string thumbnailBucket = "mayf-test-thumb1";
+        private const string thumbBucket = "mayf-test-thumb1";
 
         public S3Service(IAmazonS3 client)
         {
             _client = client;
+        }
+
+        public List<string> GetPresignedImageURLs(List<string> guids)
+        {
+            List<string> urlStrings = new List<string>();
+            try
+            {
+                foreach (string guid in guids)
+                {
+                    GetPreSignedUrlRequest request = new GetPreSignedUrlRequest
+                    {
+                        BucketName = permBucket,
+                        Key = guid,
+                        Expires = DateTime.Now.AddMinutes(5),
+                        // if you want to download directly on link click/open
+                        ResponseHeaderOverrides = new ResponseHeaderOverrides
+                        {
+                            ContentDisposition = "attachment; filename=" + guid
+                        }
+                    };
+                    urlStrings.Add(_client.GetPreSignedURL(request));
+                }
+            }
+            catch (AmazonS3Exception e)
+            {
+                Console.WriteLine("Error encountered on server. Message:'{0}' when writing an object", e.Message);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
+            }
+            return urlStrings;
         }
 
         public async Task<string> UploadImageAsync(IFormFile image, string guid)
@@ -77,7 +111,7 @@ namespace FYP.Services
                     }
 
                     outputStream.Dispose();
-                    return "https://" + thumbnailBucket + ".s3-ap-southeast-1.amazonaws.com/" + guid;
+                    return "https://" + thumbBucket + ".s3-ap-southeast-1.amazonaws.com/" + guid;
                 }
                 catch (AmazonS3Exception ex)
                 {
@@ -91,20 +125,20 @@ namespace FYP.Services
             return null;
         }
 
-        public async Task<List<ProductImage>> UploadProductImagesAsync(ICollection<IFormFile> imageFiles)
+        public async Task<List<ProductImage>> UploadProductImagesAsync(List<ProductImage> imageFiles)
         {
             List<ProductImage> images = new List<ProductImage>();
 
             foreach (var file in imageFiles)
             {
-                if (file.Length > 0)
+                if (file.ImageFile.File.Length > 0)
                 {
                     MemoryStream outputStream = new MemoryStream();
 
                     using (var memoryStream = new MemoryStream())
                     {
                         // convert image file to memoryStream
-                        await file.CopyToAsync(memoryStream);
+                        await file.ImageFile.File.CopyToAsync(memoryStream);
                         memoryStream.Seek(0, SeekOrigin.Begin);
 
                         // compress image
@@ -121,12 +155,10 @@ namespace FYP.Services
                     {
                         var fileTransferUtility = new TransferUtility(_client);
 
-                        string FileName = Guid.NewGuid().ToString("N").ToUpper() + ".jpg";
-
                         images.Add(new ProductImage
                         {
-                            ImageKey = FileName,
-                            ImageUrl = "https://" + productBucket + ".s3-ap-southeast-1.amazonaws.com/" + FileName
+                            ImageKey = file.ImageKey,
+                            ImageUrl = "https://" + productBucket + ".s3-ap-southeast-1.amazonaws.com/" + file.ImageKey
                         });
 
                         var fileTransferUtilityRequest = new TransferUtilityUploadRequest
@@ -135,7 +167,7 @@ namespace FYP.Services
                             InputStream = outputStream,
                             StorageClass = S3StorageClass.Standard,
                             //PartSize = 10485760, // 10mb
-                            Key = FileName, 
+                            Key = file.ImageKey, 
                             CannedACL = S3CannedACL.PublicRead
                         };
 
@@ -173,7 +205,7 @@ namespace FYP.Services
                         DestinationKey = key
                     };
                     await _client.CopyObjectAsync(request);
-                    imgUrls.Add("https://" + permBucket + ".s3-ap-southeast-1.amazonaws.com/" + key);
+                    imgUrls.Add("https://" + thumbBucket + ".s3-ap-southeast-1.amazonaws.com/" + key);
                 }
             }
             catch (AmazonS3Exception ex)
@@ -187,7 +219,7 @@ namespace FYP.Services
             return imgUrls;
         }
 
-        public async Task DeleteImages(List<string> keys)
+        public async Task DeleteProductImagesAsync(List<string> keys)
         {
             List<KeyVersion> delKeys = new List<KeyVersion>();
             foreach (string key in keys)
@@ -198,6 +230,30 @@ namespace FYP.Services
             DeleteObjectsRequest multiObjectDeleteRequest = new DeleteObjectsRequest
             {
                 BucketName = productBucket,
+                Objects = delKeys // This includes the object keys and null version IDs.
+            };
+            try
+            {
+                DeleteObjectsResponse response = await _client.DeleteObjectsAsync(multiObjectDeleteRequest);
+                Console.WriteLine("Successfully deleted all the {0} items", response.DeletedObjects.Count);
+            }
+            catch (DeleteObjectsException e)
+            {
+                Console.WriteLine("Unable to delete {0} objects out of {1} objects.", e.Response.DeleteErrors.Count, e.Response.DeletedObjects.Count);
+            }
+        }
+
+        public async Task DeleteCustomerImagesAsync(List<string> keys)
+        {
+            List<KeyVersion> delKeys = new List<KeyVersion>();
+            foreach (string key in keys)
+            {
+                delKeys.Add(new KeyVersion { Key = key });
+            }
+
+            DeleteObjectsRequest multiObjectDeleteRequest = new DeleteObjectsRequest
+            {
+                BucketName = permBucket,
                 Objects = delKeys // This includes the object keys and null version IDs.
             };
             try

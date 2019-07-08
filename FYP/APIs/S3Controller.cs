@@ -66,13 +66,13 @@ namespace FYP.APIs
         }
 
         // this method is called when the admin adds a new product
-        // takes in a collection of blob files (image files)
+        // it takes in a collection of blob files (image files) and
         // returns a list of ProductImage objects, that will be added
         // to the next json call to CreateProduct in ProductsController.
         // the list returned contains the image key + url for each image
         [HttpPost("product")]
         [AllowAnonymous]
-        public async Task<IActionResult> UploadProductImages(ICollection<IFormFile> imageFiles)
+        public async Task<IActionResult> UploadProductImages(List<ProductImage> imageFiles)
         {
             try
             {
@@ -88,5 +88,45 @@ namespace FYP.APIs
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        // returns a presigned URL for access to private bucket objects
+        [HttpPost("url")]
+        [AllowAnonymous]
+        public IActionResult GetPresignedImageURLs([FromBody] List<string> guids)
+        {
+            try
+            {
+                List<string> urls = _s3Service.GetPresignedImageURLs(guids);
+                return Ok(new
+                {
+                    message = "Image GET successful",
+                    imgUrls = urls
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        // remove images from s3 using the keys
+        [HttpPost("delete")]
+        [AllowAnonymous]
+        public async Task<IActionResult> DeleteImagesFromS3([FromBody] List<string> guids)
+        {
+            try
+            {
+                await _s3Service.DeleteCustomerImagesAsync(guids);
+                return Ok(new
+                {
+                    message = "Deleted images successfully!"
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
     }
 }

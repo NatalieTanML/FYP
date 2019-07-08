@@ -85,12 +85,15 @@ namespace FYP
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<IOrderService, OrderService>();
             services.AddScoped<IPayPalService, PayPalService>();
-            services.AddScoped<IOrderHub, OrderHub>();
             services.AddScoped<IHotelService, HotelService>();
+            services.AddScoped<IOrderHub, OrderHub>();
 
             // add amazon s3 service
             services.AddSingleton<IS3Service, S3Service>();
             services.AddAWSService<IAmazonS3>();
+
+            // add lazycache
+            services.AddLazyCache();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -113,7 +116,8 @@ namespace FYP
             app.UseCors(x => x
                 .AllowAnyOrigin()
                 .AllowAnyMethod()
-                .AllowAnyHeader());
+                .AllowAnyHeader()
+                .AllowCredentials());
 
             app.UseAuthentication();
             
