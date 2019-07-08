@@ -51,10 +51,10 @@ namespace FYP.APIs
                     effectiveEndDate = product.EffectiveEndDate,
                     updatedAt = product.UpdatedAt,
                     updatedById = product.UpdatedById,
-                    updatedBy = product.UpdatedBy.Name,
+                    updatedBy = product.UpdatedBy?.Name,
                     categoryId = product.CategoryId,
-                    categoryName = product.Category.CategoryName,
-                    discountPrice = product.DiscountPrices
+                    categoryName = product.Category?.CategoryName,
+                    discountPrice = product.DiscountPrices?
                         .Select(i => new
                         {
                             i.DiscountPriceId,
@@ -67,6 +67,7 @@ namespace FYP.APIs
                         .Select(i => new
                         {
                             i.OptionId,
+                            i.SKUNumber,
                             i.OptionType,
                             i.OptionValue,
                             i.CurrentQuantity,
