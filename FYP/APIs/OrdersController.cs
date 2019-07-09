@@ -262,6 +262,25 @@ namespace FYP.APIs
             return new JsonResult(statusList);
         }
 
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> UpdateOrder([FromBody] Order order)
+        {
+            int updatedById = 4; // update to current user
+            try
+            {
+                await _orderService.UpdateOrder(order, updatedById);
+                return Ok(new
+                {
+                    message = "Updated order successfully!"
+                });
+            }
+            catch (Exception ex)
+            {
+                // return error message 
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPut("status/{isSuccessful:bool}")]
         public async Task<IActionResult> UpdateStatuses([FromBody] List<int> orderIds, bool isSuccessful)
         {
