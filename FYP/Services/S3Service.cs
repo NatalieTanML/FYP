@@ -20,9 +20,10 @@ namespace FYP.Services
     {
         List<string> GetPresignedImageURLs(List<string> guids);
         Task<string> UploadImageAsync(IFormFile image, string guid);
-        Task<List<ProductImage>> UploadProductImagesAsync(ICollection<IFormFile> imageFiles);
+        Task<List<ProductImage>> UploadProductImagesAsync(List<ProductImage> imageFiles);
         Task<List<string>> CopyImagesAsync(List<string> imgKeys);
-        Task DeleteImagesAsync(List<string> keys);
+        Task DeleteProductImagesAsync(List<string> keys);
+        Task DeleteCustomerImagesAsync(List<string> keys);
     }
     public class S3Service : IS3Service
     {
@@ -124,20 +125,20 @@ namespace FYP.Services
             return null;
         }
 
-        public async Task<List<ProductImage>> UploadProductImagesAsync(ICollection<IFormFile> imageFiles)
+        public async Task<List<ProductImage>> UploadProductImagesAsync(List<ProductImage> imageFiles)
         {
             List<ProductImage> images = new List<ProductImage>();
 
             foreach (var file in imageFiles)
             {
-                if (file.Length > 0)
+                if (file.ImageFile.File.Length > 0)
                 {
                     MemoryStream outputStream = new MemoryStream();
 
                     using (var memoryStream = new MemoryStream())
                     {
                         // convert image file to memoryStream
-                        await file.CopyToAsync(memoryStream);
+                        await file.ImageFile.File.CopyToAsync(memoryStream);
                         memoryStream.Seek(0, SeekOrigin.Begin);
 
                         // compress image
@@ -154,12 +155,10 @@ namespace FYP.Services
                     {
                         var fileTransferUtility = new TransferUtility(_client);
 
-                        string FileName = Guid.NewGuid().ToString("N").ToUpper() + ".jpg";
-
                         images.Add(new ProductImage
                         {
-                            ImageKey = FileName,
-                            ImageUrl = "https://" + productBucket + ".s3-ap-southeast-1.amazonaws.com/" + FileName
+                            ImageKey = file.ImageKey,
+                            ImageUrl = "https://" + productBucket + ".s3-ap-southeast-1.amazonaws.com/" + file.ImageKey
                         });
 
                         var fileTransferUtilityRequest = new TransferUtilityUploadRequest
@@ -168,7 +167,7 @@ namespace FYP.Services
                             InputStream = outputStream,
                             StorageClass = S3StorageClass.Standard,
                             //PartSize = 10485760, // 10mb
-                            Key = FileName, 
+                            Key = file.ImageKey, 
                             CannedACL = S3CannedACL.PublicRead
                         };
 
@@ -220,7 +219,7 @@ namespace FYP.Services
             return imgUrls;
         }
 
-        public async Task DeleteImagesAsync(List<string> keys)
+        public async Task DeleteProductImagesAsync(List<string> keys)
         {
             List<KeyVersion> delKeys = new List<KeyVersion>();
             foreach (string key in keys)
@@ -231,6 +230,30 @@ namespace FYP.Services
             DeleteObjectsRequest multiObjectDeleteRequest = new DeleteObjectsRequest
             {
                 BucketName = productBucket,
+                Objects = delKeys // This includes the object keys and null version IDs.
+            };
+            try
+            {
+                DeleteObjectsResponse response = await _client.DeleteObjectsAsync(multiObjectDeleteRequest);
+                Console.WriteLine("Successfully deleted all the {0} items", response.DeletedObjects.Count);
+            }
+            catch (DeleteObjectsException e)
+            {
+                Console.WriteLine("Unable to delete {0} objects out of {1} objects.", e.Response.DeleteErrors.Count, e.Response.DeletedObjects.Count);
+            }
+        }
+
+        public async Task DeleteCustomerImagesAsync(List<string> keys)
+        {
+            List<KeyVersion> delKeys = new List<KeyVersion>();
+            foreach (string key in keys)
+            {
+                delKeys.Add(new KeyVersion { Key = key });
+            }
+
+            DeleteObjectsRequest multiObjectDeleteRequest = new DeleteObjectsRequest
+            {
+                BucketName = permBucket,
                 Objects = delKeys // This includes the object keys and null version IDs.
             };
             try

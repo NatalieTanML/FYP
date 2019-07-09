@@ -12,9 +12,10 @@ namespace FYP.Models
         public int ProductImageId { get; set; }
         public string ImageKey { get; set; }
         public string ImageUrl { get; set; }
+        public int ImageSize { get; set; }
 
         [NotMapped]
-        public IFormFile ImageFile { get; set; }
+        public FormFileWrapper ImageFile { get; set; }
         
         public int OptionId { get; set; }
         public Option Option { get; set; }

@@ -215,25 +215,7 @@ namespace FYP.APIs
                 throw new AppException("Unable to create order record.", new { message = ex.Message });
             }
         }
-
-        [HttpGet("getOrderStatus")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetOrderStatus()
-        {
-            var statuses = await _orderService.GetAllStatus();
-
-            List<object> statusList = new List<object>();
-            foreach (Status status in statuses)
-            {
-                statusList.Add(new {
-                    statusId = status.StatusId,
-                    statusName = status.StatusName
-                });
-
-            }
-            return new JsonResult(statusList);
-        }
-
+        
         [HttpGet("track/{refNo}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetOrderTracking(string refNo)
@@ -260,6 +242,26 @@ namespace FYP.APIs
             return Ok(new { guid = Guid.NewGuid().ToString("N").ToUpper() });
         }
 
+        [HttpGet("getOrderStatus")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetOrderStatus()
+        {
+            var statuses = await _orderService.GetAllStatus();
+
+            List<object> statusList = new List<object>();
+            foreach (Status status in statuses)
+            {
+                statusList.Add(new
+                {
+                    statusId = status.StatusId,
+                    statusName = status.StatusName
+                });
+
+            }
+
+            return new JsonResult(statusList);
+        }
+
         [HttpPut("status/{isSuccessful:bool}")]
         public async Task<IActionResult> UpdateStatuses([FromBody] List<int> orderIds, bool isSuccessful)
         {
@@ -284,10 +286,13 @@ namespace FYP.APIs
         [HttpPut("deliveryman/{deliveryManId:int}")]
         public async Task<IActionResult> AssignDeliveryman([FromBody] List<int> orderIds, int deliveryManId)
         {
+            
             int updatedById = 4; // update to current user
             try
             {
+
                 await _orderService.AssignDeliveryman(orderIds, deliveryManId, updatedById);
+
                 return Ok(new { message = "Updated order(s) deliveryman successfully!" });
             }
             catch (Exception ex)

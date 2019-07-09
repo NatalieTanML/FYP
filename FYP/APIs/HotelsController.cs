@@ -43,15 +43,11 @@ namespace FYP.APIs
                 {
                     value = hotel.HotelId,
                     text = hotel.HotelName,
-                    //hotelAddress = hotel.HotelAddress,
-                    //hotelPostalCode = hotel.HotelPostalCode
-
+                    hotelAddress = hotel.HotelAddress,
+                    hotelPostalCode = hotel.HotelPostalCode
                 });
-
-                
             }
-            
-                return new JsonResult(hotelList);
+            return new JsonResult(hotelList);
         }
 
         //[AllowAnonymous]
@@ -75,10 +71,6 @@ namespace FYP.APIs
         //    }
 
         //}
-
-
-
-
-
+        
     }
 }
