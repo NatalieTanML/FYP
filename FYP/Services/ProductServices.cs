@@ -29,6 +29,7 @@ namespace FYP.Services
         Task<Product> GetById(int id);
         Task<Product> Create(Product product);
         Task Update(Product productParam);
+        Task UpdateStock(int id, int stockUpdate);
         Task Delete(int id);
     }
 
@@ -53,22 +54,17 @@ namespace FYP.Services
         public async Task<IEnumerable<Product>> GetAll()
         {
             // returns full list of products including join with relevant tables
-            // define a func to get the products but do not Execute() it
-            Func<Task<IEnumerable<Product>>> productGetter = async () => await _context.Products
+            return await _context.Products
                 .Include(product => product.Category)
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
                 .ThenInclude(option => option.ProductImages)
                 .ToListAsync();
-
-            // get the results from the cache based on a unique key, or 
-            // execute the func and cache the results
-            return await _cache.GetOrAddAsync("AllProducts.Get", productGetter, DateTimeOffset.Now.AddHours(8));
         }
 
         public async Task<IEnumerable<Product>> GetByPage(int pageNumber, int productsPerPage)
         {
-            Func<Task<IEnumerable<Product>>> productGetter = async () => await _context.Products
+            async Task<IEnumerable<Product>> productGetter() => await _context.Products
                 .Skip((pageNumber - 1) * productsPerPage)
                 .Take(productsPerPage)
                 .Include(product => product.Category)
@@ -77,7 +73,7 @@ namespace FYP.Services
                 .ThenInclude(o => o.ProductImages)
                 .ToListAsync();
 
-            return await _cache.GetOrAddAsync("ProductsByPage.Get", productGetter, DateTimeOffset.Now.AddHours(8));
+            return await _cache.GetOrAddAsync($"ProductsByPage.Get.{pageNumber}", productGetter);
         }
 
         public async Task<int> GetTotalNumberOfProducts()
@@ -88,14 +84,12 @@ namespace FYP.Services
         public async Task<Product> GetById(int id)
         {
             // searches product, including join with relevant tables
-            Func<Task<Product>> productGetter = async () => await _context.Products
+            return await _context.Products
                 .Include(product => product.Category)
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
                 .ThenInclude(option => option.ProductImages)
                 .FirstOrDefaultAsync(p => p.ProductId == id);
-
-            return await _cache.GetOrAddAsync($"ProductById.Get.{id}", productGetter, DateTime.Now.AddHours(8));
         }
 
         public async Task<Product> Create(Product product)
@@ -128,12 +122,16 @@ namespace FYP.Services
                     {
                         newImages.Add(new ProductImage
                         {
+                            ProductImageId = img.ProductImageId,
+                            OptionId = img.OptionId,
                             ImageKey = img.ImageKey,
                             ImageUrl = img.ImageUrl
                         });
                     };
                     newOptions.Add(new Option
                     {
+                        OptionId = op.OptionId,
+                        ProductId = op.ProductId,
                         SKUNumber = op.SKUNumber,
                         OptionType = op.OptionType,
                         OptionValue = op.OptionValue,
@@ -250,7 +248,7 @@ namespace FYP.Services
                     });
                 }
 
-                List<string> imagesToDelete = new List<string>();
+                //List<string> imagesToDelete = new List<string>();
 
                 // Delete children records if it is removed from the new product
                 foreach (DiscountPrice childDP in product.DiscountPrices)
@@ -265,7 +263,7 @@ namespace FYP.Services
                     {
                         foreach (ProductImage childImg in childOP.ProductImages)
                         {
-                            imagesToDelete.Add(childImg.ImageKey);
+                            //imagesToDelete.Add(childImg.ImageKey);
                             _context.ProductImages.Remove(childImg);
                         }
                         _context.Options.Remove(childOP);
@@ -276,7 +274,7 @@ namespace FYP.Services
                         {
                             if (!newOptions.Any(o => o.ProductImages.Any(i => i.ProductImageId == childImg.ProductImageId)))
                             {
-                                imagesToDelete.Add(childImg.ImageKey);
+                                //imagesToDelete.Add(childImg.ImageKey);
                                 _context.ProductImages.Remove(childImg);
                             }
                         }
@@ -337,12 +335,39 @@ namespace FYP.Services
                 await _context.SaveChangesAsync();
 
                 // finally, delete images from s3
-                if (imagesToDelete.Count > 0)
-                    await _s3Service.DeleteProductImagesAsync(imagesToDelete);
+                //if (imagesToDelete.Count > 0)
+                //    await _s3Service.DeleteProductImagesAsync(imagesToDelete);
             }
             catch (Exception ex)
             {
                 throw new AppException("Unable to update product record.", new { message = ex.Message });
+            }
+        }
+
+        public async Task UpdateStock(int id, int stockUpdate)
+        {
+            // find option to update
+            var option = await _context.Options.FindAsync(id);
+
+            // if product does not exist
+            if (option == null)
+                throw new AppException("Option not found.");
+
+            try
+            {
+                // update the stock
+                // stockUpdate should be the amount of stock added/removed
+                // e.g. current qty = 100, stockUpdate = 30 
+                // 100 + 30 = 130 (new stock amt, add 30)
+                // e.g.2 curr qty = 100, stockUpdate = -10
+                // 100 + -10 = 90 (new stock amt, minus 10)
+                option.CurrentQuantity += stockUpdate;
+                _context.Options.Update(option);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new AppException("Unable to update option quantity.", new { message = ex.Message });
             }
         }
 

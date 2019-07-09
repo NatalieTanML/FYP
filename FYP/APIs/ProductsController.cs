@@ -67,6 +67,7 @@ namespace FYP.APIs
                         .Select(i => new
                         {
                             i.OptionId,
+                            i.SKUNumber,
                             i.OptionType,
                             i.OptionValue,
                             i.CurrentQuantity,
@@ -336,6 +337,26 @@ namespace FYP.APIs
             {
                 // return error message 
                 throw new AppException("Unable to update product record.", new { message = ex.Message });
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPut("stock/{id:int}/{amount:int}")]
+        public async Task<IActionResult> UpdateStock(int id, int amount)
+        {
+            // id is for option id
+            try
+            {
+                await _productService.UpdateStock(id, amount);
+                return Ok(new
+                {
+                    message = "Updated stock successfully!"
+                });
+            }
+            catch (Exception ex)
+            {
+                // return error message 
+                throw new AppException("Unable to update stock.", new { message = ex.Message });
             }
         }
 
