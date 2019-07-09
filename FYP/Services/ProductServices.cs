@@ -119,11 +119,11 @@ namespace FYP.Services
                     });
                 }
 
-                // ensure the options are properly entered
+                // ensure the new options are properly entered
                 List<Option> newOptions = new List<Option>();
-                List<ProductImage> newImages = new List<ProductImage>();
                 foreach (Option op in product.Options)
                 {
+                    List<ProductImage> newImages = new List<ProductImage>();
                     foreach (ProductImage img in op.ProductImages)
                     {
                         newImages.Add(new ProductImage
@@ -141,9 +141,9 @@ namespace FYP.Services
                         MinimumQuantity = int.Parse(op.MinimumQuantity.ToString()),
                         ProductImages = newImages
                     });
-                    newImages.Clear();
                 }
-                
+
+
                 // create new product object to be added
                 Product newProduct = new Product()
                 {

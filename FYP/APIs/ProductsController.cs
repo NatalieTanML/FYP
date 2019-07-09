@@ -177,6 +177,7 @@ namespace FYP.APIs
                         .Select(i => new
                         {
                             i.OptionId,
+                            i.SKUNumber,
                             i.OptionType,
                             i.OptionValue,
                             i.CurrentQuantity,

@@ -116,7 +116,7 @@ namespace FYP.APIs
         {
             try
             {
-                await _s3Service.DeleteCustomerImagesAsync(guids);
+                await _s3Service.DeleteProductImagesAsync(guids);
                 return Ok(new
                 {
                     message = "Deleted images successfully!"
