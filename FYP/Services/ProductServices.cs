@@ -140,7 +140,8 @@ namespace FYP.Services
                         ProductImages = newImages
                     });
                 }
-                
+
+
                 // create new product object to be added
                 Product newProduct = new Product()
                 {
