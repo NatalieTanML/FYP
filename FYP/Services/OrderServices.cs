@@ -198,6 +198,8 @@ namespace FYP.Services
             {
                 order.UpdatedAt = DateTime.Now;
                 order.UpdatedById = updatedBy;
+
+                // if order has an existing address
                 if (order.AddressId != null)
                 {
                     order.Address.AddressLine1 = inOrder.Address.AddressLine1;
@@ -207,18 +209,24 @@ namespace FYP.Services
                 }
                 else
                 {
-                    order.Address = new Address
+                    // if input has an address input
+                    if (!string.IsNullOrWhiteSpace(inOrder.Address.AddressLine1))
                     {
-                        AddressLine1 = inOrder.Address.AddressLine1,
-                        AddressLine2 = inOrder.Address.AddressLine2,
-                        UnitNo = inOrder.Address.UnitNo,
-                        PostalCode = inOrder.Address.PostalCode
-                    };
+                        order.Address = new Address
+                        {
+                            AddressLine1 = inOrder.Address.AddressLine1,
+                            AddressLine2 = inOrder.Address.AddressLine2,
+                            UnitNo = inOrder.Address.UnitNo,
+                            PostalCode = inOrder.Address.PostalCode
+                        };
+                    }
                 }
+                // if input is a hotel address (only can send to existing hotels)
                 if (inOrder.Address.HotelId.HasValue)
                 {
                     order.Address.HotelId = inOrder.Address.HotelId;
                 }
+
                 order.DeliveryTypeId = inOrder.DeliveryTypeId;
                 order.Request = inOrder.Request;
                 order.Email = EncryptString(inOrder.EmailString, encryptionKey);
