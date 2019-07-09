@@ -50,10 +50,10 @@ namespace FYP.Services
                         Key = guid,
                         Expires = DateTime.Now.AddMinutes(5),
                         // if you want to download directly on link click/open
-                        //ResponseHeaderOverrides = new ResponseHeaderOverrides
-                        //{
-                        //    ContentDisposition = "attachment; filename=" + guid
-                        //}
+                        ResponseHeaderOverrides = new ResponseHeaderOverrides
+                        {
+                            ContentDisposition = "attachment; filename=" + guid
+                        }
                     };
                     urlStrings.Add(_client.GetPreSignedURL(request));
                 }
