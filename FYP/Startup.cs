@@ -40,7 +40,14 @@ namespace FYP
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddCors();
+            services.AddCors(options => options.AddPolicy("CorsPolicy", builder =>
+            {
+                builder
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials()
+                    .AllowAnyOrigin();
+            }));
             services.AddMvc()
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
                 .AddJsonOptions(
@@ -77,7 +84,10 @@ namespace FYP
             });
 
             // add signalr service
-            services.AddSignalR();
+            services.AddSignalR(options =>
+            {
+                options.EnableDetailedErrors = true;
+            });
 
             // configure DI for application services
             // TODO: Add new services each time you create a new controller & service
@@ -112,25 +122,19 @@ namespace FYP
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseCookiePolicy();
-
-            app.UseCors(x => x
-                .AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials());
-
+            app.UseCors("CorsPolicy");
             app.UseAuthentication();
             
+            app.UseSignalR(route =>
+            {
+                route.MapHub<OrderHub>("/order-hub");
+            });
+
             app.UseMvc(routes =>
             {
                 routes.MapRoute(
                     name: "default",
                     template: "{controller=Home}/{action=Index}/{id?}");
-            });
-
-            app.UseSignalR(route =>
-            {
-                route.MapHub<OrderHub>("/order-hub");
             });
         }
     }

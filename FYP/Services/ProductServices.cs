@@ -113,21 +113,25 @@ namespace FYP.Services
                     });
                 }
 
-                // ensure the options are properly entered
+                // ensure the new options are properly entered
                 List<Option> newOptions = new List<Option>();
-                List<ProductImage> newImages = new List<ProductImage>();
                 foreach (Option op in product.Options)
                 {
+                    List<ProductImage> newImages = new List<ProductImage>();
                     foreach (ProductImage img in op.ProductImages)
                     {
                         newImages.Add(new ProductImage
                         {
+                            ProductImageId = img.ProductImageId,
+                            OptionId = img.OptionId,
                             ImageKey = img.ImageKey,
                             ImageUrl = img.ImageUrl
                         });
                     };
                     newOptions.Add(new Option
                     {
+                        OptionId = op.OptionId,
+                        ProductId = op.ProductId,
                         SKUNumber = op.SKUNumber,
                         OptionType = op.OptionType,
                         OptionValue = op.OptionValue,
@@ -135,9 +139,9 @@ namespace FYP.Services
                         MinimumQuantity = int.Parse(op.MinimumQuantity.ToString()),
                         ProductImages = newImages
                     });
-                    newImages.Clear();
                 }
-                
+
+
                 // create new product object to be added
                 Product newProduct = new Product()
                 {
@@ -244,7 +248,7 @@ namespace FYP.Services
                     });
                 }
 
-                List<string> imagesToDelete = new List<string>();
+                //List<string> imagesToDelete = new List<string>();
 
                 // Delete children records if it is removed from the new product
                 foreach (DiscountPrice childDP in product.DiscountPrices)
@@ -259,7 +263,7 @@ namespace FYP.Services
                     {
                         foreach (ProductImage childImg in childOP.ProductImages)
                         {
-                            imagesToDelete.Add(childImg.ImageKey);
+                            //imagesToDelete.Add(childImg.ImageKey);
                             _context.ProductImages.Remove(childImg);
                         }
                         _context.Options.Remove(childOP);
@@ -270,7 +274,7 @@ namespace FYP.Services
                         {
                             if (!newOptions.Any(o => o.ProductImages.Any(i => i.ProductImageId == childImg.ProductImageId)))
                             {
-                                imagesToDelete.Add(childImg.ImageKey);
+                                //imagesToDelete.Add(childImg.ImageKey);
                                 _context.ProductImages.Remove(childImg);
                             }
                         }
@@ -331,8 +335,8 @@ namespace FYP.Services
                 await _context.SaveChangesAsync();
 
                 // finally, delete images from s3
-                if (imagesToDelete.Count > 0)
-                    await _s3Service.DeleteProductImagesAsync(imagesToDelete);
+                //if (imagesToDelete.Count > 0)
+                //    await _s3Service.DeleteProductImagesAsync(imagesToDelete);
             }
             catch (Exception ex)
             {

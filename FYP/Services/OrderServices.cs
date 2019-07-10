@@ -30,10 +30,10 @@ namespace FYP.Services
         Task<IEnumerable<Status>> GetAllStatus();
         Task<object> GetOrderTracking(string refNo);
         Task<Order> Create(Order order);
+        Task UpdateOrder(Order inOrder, int updatedBy);
         Task<List<object>> UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful);
         Task AssignDeliveryman(List<int> orderIds, int deliveryManId, int updatedById);
         Task UpdateRecipient(List<int> orderIds, OrderRecipient recipient, int updatedById);
-        
     }
 
     public class OrderService : IOrderService
@@ -109,40 +109,25 @@ namespace FYP.Services
         {
             try
             {
-                //// update & check stock
-                //// assume that customers can still place order even if no stock
-                //// order will be put into "preorder" or similar state, since 
-                //// stock can be replenished easily (items are not limited/rare).
-                //foreach (OrderItem orderItem in order.OrderItems)
-                //{
-                //    var currentOption = await _context.Options.FirstOrDefaultAsync(o => o.OptionId == orderItem.OptionId);
-                    
-                //    if (currentOption.CurrentQuantity < orderItem.Quantity)
-                //    {
-                //        throw new AppException("There is not enough stock for {0}.", currentOption.SKUNumber);
-                //    }
-                //    else
-                //    {
-                //        currentOption.CurrentQuantity -= orderItem.Quantity;
-                //        _context.Options.Update(currentOption);
-                //    }
-                //}
+                // assume that customers can still place order even if no stock
+                // order will be put into "preorder" or similar state, since 
+                // stock can be replenished easily (items are not limited/rare).
 
                 List<string> imgKeys = new List<string>();
                 foreach (OrderItem item in order.OrderItems)
-                {
                     imgKeys.Add(item.OrderImageKey);
-                }
 
                 // make images on s3 permanent
                 List<string> imgUrls = await _s3Service.CopyImagesAsync(imgKeys);
 
                 // put the new images url into object
                 for (int i = 0; i < order.OrderItems.Count; i++)
-                {
                     order.OrderItems.ElementAt(i).OrderImageUrl = imgUrls.ElementAt(i);
-                }
-                
+
+                // if the order is for self-pickup, there should be no address tied to it
+                if (string.IsNullOrWhiteSpace(order.Address.AddressLine1))
+                    order.Address = null;
+
                 // create new order object to be added
                 Order newOrder = new Order()
                 {
@@ -194,6 +179,66 @@ namespace FYP.Services
                 statusName = order.Status.StatusName,
                 updatedAt = order.UpdatedAt
             };
+        }
+
+        public async Task UpdateOrder(Order inOrder, int updatedBy)
+        {
+            // get current order
+            var order = await _context.Orders
+                .Where(o => o.OrderId == inOrder.OrderId)
+                .Include(o => o.Address)
+                .ThenInclude(a => a.Hotel)
+                .FirstOrDefaultAsync();
+
+            // if orders does not exist
+            if (order == null)
+                throw new AppException("Order not found.");
+
+            try
+            {
+                order.UpdatedAt = DateTime.Now;
+                order.UpdatedById = updatedBy;
+
+                // if order has an existing address
+                if (order.AddressId != null)
+                {
+                    order.Address.AddressLine1 = inOrder.Address.AddressLine1;
+                    order.Address.AddressLine2 = inOrder.Address.AddressLine2;
+                    order.Address.UnitNo = inOrder.Address.UnitNo;
+                    order.Address.PostalCode = inOrder.Address.PostalCode;
+                }
+                else
+                {
+                    // if input has an address input
+                    if (!string.IsNullOrWhiteSpace(inOrder.Address.AddressLine1))
+                    {
+                        order.Address = new Address
+                        {
+                            AddressLine1 = inOrder.Address.AddressLine1,
+                            AddressLine2 = inOrder.Address.AddressLine2,
+                            UnitNo = inOrder.Address.UnitNo,
+                            PostalCode = inOrder.Address.PostalCode
+                        };
+                    }
+                }
+                // if input is a hotel address (only can send to existing hotels)
+                if (inOrder.Address.HotelId.HasValue)
+                {
+                    order.Address.HotelId = inOrder.Address.HotelId;
+                }
+
+                order.DeliveryTypeId = inOrder.DeliveryTypeId;
+                order.Request = inOrder.Request;
+                order.Email = EncryptString(inOrder.EmailString, encryptionKey);
+
+                _context.Orders.Update(order);
+                await _context.SaveChangesAsync();
+                await _orderHub.NotifyOneChange(order);
+            }
+            catch (Exception ex)
+            {
+                throw new AppException("Unable to update product record.", new { message = ex.Message });
+            }
         }
 
         public async Task<List<object>> UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful)
@@ -268,7 +313,6 @@ namespace FYP.Services
                             break;
                     }
                 }
-
                 order.UpdatedAt = DateTime.Now;
                 order.UpdatedById = updatedById;
 
@@ -286,7 +330,6 @@ namespace FYP.Services
             await _orderHub.NotifyMultipleChanges(orders);
             return updated;
         }
-
 
         public async Task AssignDeliveryman(List<int> orderIds, int deliveryManId, int updatedById)
         {
@@ -395,12 +438,9 @@ namespace FYP.Services
                             }
                         }
                     }
-
                     return result;
                 }
             }
         }
-
-      
     }
 }
