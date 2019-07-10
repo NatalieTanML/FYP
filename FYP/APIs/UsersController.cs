@@ -142,7 +142,7 @@ namespace FYP.APIs
                 token = tokenString
             });
         }
-
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAllUsers()
         {
