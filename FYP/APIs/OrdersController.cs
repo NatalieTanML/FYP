@@ -96,8 +96,13 @@ namespace FYP.APIs
                             options = (new
                             {
                                 optionId = i.Option.OptionId,
-                                optionType = i.Option.OptionType,
-                                optionValue = i.Option.OptionValue,
+                                attributes = i.Option.Attributes
+                                    .Select(e => new
+                                    {
+                                        e.AttributeId,
+                                        e.AttributeType,
+                                        e.AttributeValue
+                                    }),
                                 product = (new
                                 {
                                     productId = i.Option.Product.ProductId,
@@ -176,8 +181,13 @@ namespace FYP.APIs
                             options = (new
                             {
                                 optionId = i.Option.OptionId,
-                                optionType = i.Option.OptionType,
-                                optionValue = i.Option.OptionValue,
+                                attributes = i.Option.Attributes
+                                    .Select(e => new
+                                    {
+                                        e.AttributeId,
+                                        e.AttributeType,
+                                        e.AttributeValue
+                                    }),
                                 skuNumber = i.Option.SKUNumber,
                                 product = (new
                                 {
@@ -260,6 +270,25 @@ namespace FYP.APIs
             }
 
             return new JsonResult(statusList);
+        }
+
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> UpdateOrder([FromBody] Order order)
+        {
+            int updatedById = 4; // update to current user
+            try
+            {
+                await _orderService.UpdateOrder(order, updatedById);
+                return Ok(new
+                {
+                    message = "Updated order successfully!"
+                });
+            }
+            catch (Exception ex)
+            {
+                // return error message 
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPut("status/{isSuccessful:bool}")]

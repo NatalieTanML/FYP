@@ -12,8 +12,6 @@ namespace FYP.Models
         [Key]
         public int OptionId { get; set; }
         public string SKUNumber { get; set; }
-        public string OptionType { get; set; }
-        public string OptionValue { get; set; }
         public int CurrentQuantity { get; set; }
         public int MinimumQuantity { get; set; }
 
@@ -21,5 +19,6 @@ namespace FYP.Models
         public Product Product { get; set; }
 
         public ICollection<ProductImage> ProductImages { get; set; }
+        public ICollection<Attribute> Attributes { get; set; }
     }
 }

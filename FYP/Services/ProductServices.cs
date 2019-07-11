@@ -59,6 +59,8 @@ namespace FYP.Services
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
                 .ThenInclude(option => option.ProductImages)
+                .Include(product => product.Options)
+                .ThenInclude(o => o.Attributes)
                 .ToListAsync();
         }
 
@@ -71,6 +73,8 @@ namespace FYP.Services
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
                 .ThenInclude(o => o.ProductImages)
+                .Include(product => product.Options)
+                .ThenInclude(o => o.Attributes)
                 .ToListAsync();
 
             return await _cache.GetOrAddAsync($"ProductsByPage.Get.{pageNumber}", productGetter);
@@ -89,6 +93,8 @@ namespace FYP.Services
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
                 .ThenInclude(option => option.ProductImages)
+                .Include(product => product.Options)
+                .ThenInclude(o => o.Attributes)
                 .FirstOrDefaultAsync(p => p.ProductId == id);
         }
 
@@ -117,16 +123,25 @@ namespace FYP.Services
                 List<Option> newOptions = new List<Option>();
                 foreach (Option op in product.Options)
                 {
+                    // add the new images
                     List<ProductImage> newImages = new List<ProductImage>();
                     foreach (ProductImage img in op.ProductImages)
                     {
                         newImages.Add(new ProductImage
                         {
-                            ProductImageId = img.ProductImageId,
-                            OptionId = img.OptionId,
                             ImageKey = img.ImageKey,
                             ImageUrl = img.ImageUrl,
                             ImageSize = img.ImageSize
+                        });
+                    };
+                    // add the attributes
+                    List<Models.Attribute> newAttributes = new List<Models.Attribute>();
+                    foreach (Models.Attribute atr in op.Attributes)
+                    {
+                        newAttributes.Add(new Models.Attribute
+                        {
+                            AttributeType = atr.AttributeType,
+                            AttributeValue = atr.AttributeValue
                         });
                     };
                     newOptions.Add(new Option
@@ -134,14 +149,12 @@ namespace FYP.Services
                         OptionId = op.OptionId,
                         ProductId = op.ProductId,
                         SKUNumber = op.SKUNumber,
-                        OptionType = op.OptionType,
-                        OptionValue = op.OptionValue,
                         CurrentQuantity = int.Parse(op.CurrentQuantity.ToString()),
                         MinimumQuantity = int.Parse(op.MinimumQuantity.ToString()),
-                        ProductImages = newImages
+                        ProductImages = newImages,
+                        Attributes = newAttributes
                     });
                 }
-
 
                 // create new product object to be added
                 Product newProduct = new Product()
@@ -152,14 +165,14 @@ namespace FYP.Services
                     ImageWidth = double.Parse(product.ImageWidth.ToString()),
                     ImageHeight = double.Parse(product.ImageHeight.ToString()),
                     EffectiveStartDate = DateTime.ParseExact(product.EffectiveStartDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
-                    EffectiveEndDate = DateTime.ParseExact(product.EffectiveEndDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
+                    EffectiveEndDate = string.IsNullOrWhiteSpace(product.EffectiveEndDate.ToString()) ? (DateTime?) null : DateTime.ParseExact(product.EffectiveEndDate?.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
                     CreatedAt = DateTime.Now,
                     CreatedById = product.CreatedById,
                     UpdatedAt = DateTime.Now,
                     UpdatedById = product.UpdatedById,
                     DiscountPrices = newPrices,
                     Options = newOptions,
-                    CategoryId = 2
+                    CategoryId = product.CategoryId.Equals(0) ? null : product.CategoryId
                 };
                 
                 // add to database
@@ -182,6 +195,8 @@ namespace FYP.Services
                 .Include(p => p.DiscountPrices)
                 .Include(p => p.Options)
                 .ThenInclude(p => p.ProductImages)
+                .Include(p => p.Options)
+                .ThenInclude(p => p.Attributes)
                 .SingleOrDefaultAsync();
 
             // if product does not exist
@@ -202,29 +217,34 @@ namespace FYP.Services
                 product.ImageWidth = double.Parse(productParam.ImageWidth.ToString());
                 product.ImageHeight = double.Parse(productParam.ImageHeight.ToString());
                 product.EffectiveStartDate = DateTime.ParseExact(productParam.EffectiveStartDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture);
-                product.EffectiveEndDate = DateTime.ParseExact(productParam.EffectiveEndDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture);
+                product.EffectiveEndDate = string.IsNullOrWhiteSpace(productParam.EffectiveEndDate.ToString()) ? (DateTime?)null : DateTime.ParseExact(product.EffectiveEndDate?.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture);
                 product.UpdatedAt = DateTime.Now;
+                product.UpdatedById = productParam.UpdatedById;
                 _context.Products.Update(product);
 
                 // ensure the input prices are properly entered
                 List<DiscountPrice> newPrices = new List<DiscountPrice>();
-                foreach (DiscountPrice price in productParam.DiscountPrices)
+                if (productParam.DiscountPrices != null)
                 {
-                    newPrices.Add(new DiscountPrice
+                    foreach (DiscountPrice price in productParam.DiscountPrices)
                     {
-                        DiscountPriceId = price.DiscountPriceId,
-                        ProductId = price.ProductId,
-                        EffectiveStartDate = DateTime.ParseExact(price.EffectiveStartDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
-                        EffectiveEndDate = DateTime.ParseExact(price.EffectiveEndDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
-                        DiscountValue = decimal.Parse(price.DiscountValue.ToString()),
-                        IsPercentage = bool.Parse(price.IsPercentage.ToString())
-                    });
+                        newPrices.Add(new DiscountPrice
+                        {
+                            DiscountPriceId = price.DiscountPriceId,
+                            ProductId = price.ProductId,
+                            EffectiveStartDate = DateTime.ParseExact(price.EffectiveStartDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
+                            EffectiveEndDate = string.IsNullOrWhiteSpace(product.EffectiveEndDate.ToString()) ? (DateTime?)null : DateTime.ParseExact(price.EffectiveEndDate?.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
+                            DiscountValue = decimal.Parse(price.DiscountValue.ToString()),
+                            IsPercentage = bool.Parse(price.IsPercentage.ToString())
+                        });
+                    }
                 }
                 
                 // ensure the new options are properly entered
                 List<Option> newOptions = new List<Option>();
                 foreach (Option op in productParam.Options)
                 {
+                    // add the new images
                     List<ProductImage> newImages = new List<ProductImage>();
                     foreach (ProductImage img in op.ProductImages)
                     {
@@ -233,7 +253,20 @@ namespace FYP.Services
                             ProductImageId = img.ProductImageId,
                             OptionId = img.OptionId,
                             ImageKey = img.ImageKey,
-                            ImageUrl = img.ImageUrl
+                            ImageUrl = img.ImageUrl,
+                            ImageSize = img.ImageSize
+                        });
+                    };
+                    // add the attributes
+                    List<Models.Attribute> newAttributes = new List<Models.Attribute>();
+                    foreach (Models.Attribute atr in op.Attributes)
+                    {
+                        newAttributes.Add(new Models.Attribute
+                        {
+                            AttributeId = atr.AttributeId,
+                            OptionId = atr.OptionId,
+                            AttributeType = atr.AttributeType,
+                            AttributeValue = atr.AttributeValue
                         });
                     };
                     newOptions.Add(new Option
@@ -241,63 +274,69 @@ namespace FYP.Services
                         OptionId = op.OptionId,
                         ProductId = op.ProductId,
                         SKUNumber = op.SKUNumber,
-                        OptionType = op.OptionType,
-                        OptionValue = op.OptionValue,
                         CurrentQuantity = int.Parse(op.CurrentQuantity.ToString()),
                         MinimumQuantity = int.Parse(op.MinimumQuantity.ToString()),
-                        ProductImages = newImages
+                        ProductImages = newImages,
+                        Attributes = newAttributes
                     });
                 }
 
-                //List<string> imagesToDelete = new List<string>();
-
                 // Delete children records if it is removed from the new product
-                foreach (DiscountPrice childDP in product.DiscountPrices)
+                if (product.DiscountPrices != null)
                 {
-                    if (!newPrices.Any(p => p.DiscountPriceId == childDP.DiscountPriceId))
-                        _context.DiscountPrices.Remove(childDP);
+                    foreach (DiscountPrice childDP in product.DiscountPrices)
+                    {
+                        if (!newPrices.Any(p => p.DiscountPriceId == childDP.DiscountPriceId))
+                            _context.DiscountPrices.Remove(childDP);
+                    }
                 }
-
                 foreach (Option childOP in product.Options)
                 {
+                    // if the option is deleted altogether
                     if (!newOptions.Any(o => o.OptionId == childOP.OptionId))
                     {
                         foreach (ProductImage childImg in childOP.ProductImages)
-                        {
-                            //imagesToDelete.Add(childImg.ImageKey);
                             _context.ProductImages.Remove(childImg);
-                        }
+                        foreach (Models.Attribute childAtr in childOP.Attributes)
+                            _context.Attributes.Remove(childAtr);
+
                         _context.Options.Remove(childOP);
                     }
                     else
                     {
+                        // option is not deleted, but child records under it are
                         foreach (ProductImage childImg in childOP.ProductImages)
                         {
                             if (!newOptions.Any(o => o.ProductImages.Any(i => i.ProductImageId == childImg.ProductImageId)))
-                            {
-                                //imagesToDelete.Add(childImg.ImageKey);
                                 _context.ProductImages.Remove(childImg);
-                            }
+                        }
+                        foreach (Models.Attribute childAtr in childOP.Attributes)
+                        {
+                            if (!newOptions.Any(o => o.Attributes.Any(i => i.AttributeId == childAtr.AttributeId)))
+                                _context.Attributes.Remove(childAtr);
                         }
                     }
                 }
 
                 // Update and insert new children records
-                foreach (DiscountPrice dpModel in newPrices)
+                if (newPrices != null)
                 {
-                    DiscountPrice existingPrice = product.DiscountPrices
-                        .Where(d => d.DiscountPriceId == dpModel.DiscountPriceId)
-                        .SingleOrDefault();
+                    foreach (DiscountPrice dpModel in newPrices)
+                    {
+                        DiscountPrice existingPrice = product.DiscountPrices
+                            .Where(d => d.DiscountPriceId == dpModel.DiscountPriceId)
+                            .SingleOrDefault();
 
-                    if (existingPrice != null)
-                    {
-                        // update the price since it exists
-                        _context.Entry(existingPrice).CurrentValues.SetValues(dpModel);
-                    }
-                    else
-                    {
-                        // does not exist, thus insert
-                        product.DiscountPrices.Add(dpModel);
+                        if (existingPrice != null)
+                        {
+                            // update the price since it exists
+                            _context.Entry(existingPrice).CurrentValues.SetValues(dpModel);
+                        }
+                        else
+                        {
+                            // does not exist, thus insert
+                            product.DiscountPrices.Add(dpModel);
+                        }
                     }
                 }
 
@@ -321,7 +360,31 @@ namespace FYP.Services
                                 // if image exists, update
                                 _context.Entry(existingImage).CurrentValues.SetValues(imgModel);
                             }
+                            else
+                            {
+                                // does not exist, thus insert
+                                existingOption.ProductImages.Add(imgModel);
+                            }
                         }
+                        // update attributes next
+                        foreach (Models.Attribute atrModel in opModel.Attributes)
+                        {
+                            Models.Attribute existingAttribute = existingOption.Attributes
+                                .Where(i => i.AttributeId == atrModel.AttributeId)
+                                .SingleOrDefault();
+
+                            if (existingAttribute != null)
+                            {
+                                // if attribute exists, update
+                                _context.Entry(existingAttribute).CurrentValues.SetValues(atrModel);
+                            }
+                            else
+                            {
+                                // does not exist, thus insert
+                                existingOption.Attributes.Add(atrModel);
+                            }
+                        }
+
                         // now update the options to the db
                         _context.Entry(existingOption).CurrentValues.SetValues(opModel);
                     }
@@ -334,10 +397,6 @@ namespace FYP.Services
 
                 // all good, can save changes
                 await _context.SaveChangesAsync();
-
-                // finally, delete images from s3
-                //if (imagesToDelete.Count > 0)
-                //    await _s3Service.DeleteProductImagesAsync(imagesToDelete);
             }
             catch (Exception ex)
             {

@@ -32,8 +32,10 @@ namespace FYP.Services
 
         public async Task<Product> VerifyUserCart(UserProduct userProduct)
         {
-            return await _context.Products.
-               FirstOrDefaultAsync(p => p.ProductId == userProduct.ProductId);
+            return await _context.Products
+                .Include(p => p.Options)
+                .FirstOrDefaultAsync(p => p.ProductId == userProduct.ProductId);
+            //if (product.)
         }
 
         public async Task<HttpResponse> CreatePaypalTransaction(List<UserProduct> userProducts)
@@ -120,24 +122,24 @@ namespace FYP.Services
                             },
                         }
                     },
-                    Items = lineItems,
+                    Items = lineItems
 
-                    Shipping = new ShippingDetails
-                    {
-                        Name = new Name
-                        {
-                            FullName = "John Doe"
-                        },
-                        AddressPortable = new AddressPortable
-                        {
-                            AddressLine1 = "123 Townsend St",
-                            AddressLine2 = "Floor 6",
-                            AdminArea2 = "San Francisco",
-                            AdminArea1 = "CA",
-                            PostalCode = "94107",
-                            CountryCode = "US"
-                        }
-                    }
+                    //Shipping = new ShippingDetails
+                    //{
+                    //    Name = new Name
+                    //    {
+                    //        FullName = "John Doe"
+                    //    },
+                    //    AddressPortable = new AddressPortable
+                    //    {
+                    //        AddressLine1 = "123 Townsend St",
+                    //        AddressLine2 = "Floor 6",
+                    //        AdminArea2 = "San Francisco",
+                    //        AdminArea1 = "CA",
+                    //        PostalCode = "94107",
+                    //        CountryCode = "US"
+                    //    }
+                    //}
                 }
             }
         };
