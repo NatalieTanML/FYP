@@ -96,8 +96,13 @@ namespace FYP.APIs
                             options = (new
                             {
                                 optionId = i.Option.OptionId,
-                                optionType = i.Option.OptionType,
-                                optionValue = i.Option.OptionValue,
+                                attributes = i.Option.Attributes
+                                    .Select(e => new
+                                    {
+                                        e.AttributeId,
+                                        e.AttributeType,
+                                        e.AttributeValue
+                                    }),
                                 product = (new
                                 {
                                     productId = i.Option.Product.ProductId,
@@ -176,8 +181,13 @@ namespace FYP.APIs
                             options = (new
                             {
                                 optionId = i.Option.OptionId,
-                                optionType = i.Option.OptionType,
-                                optionValue = i.Option.OptionValue,
+                                attributes = i.Option.Attributes
+                                    .Select(e => new
+                                    {
+                                        e.AttributeId,
+                                        e.AttributeType,
+                                        e.AttributeValue
+                                    }),
                                 skuNumber = i.Option.SKUNumber,
                                 product = (new
                                 {

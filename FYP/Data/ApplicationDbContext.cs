@@ -15,6 +15,7 @@ namespace FYP.Data
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<Address> Addresses { get; set; }
+        public DbSet<Models.Attribute> Attributes { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<DeliveryType> DeliveryTypes { get; set; }
         public DbSet<DiscountPrice> DiscountPrices { get; set; }
@@ -84,10 +85,17 @@ namespace FYP.Data
                 .HasMany(p => p.Options)
                 .WithOne(p => p.Product)
                 .HasForeignKey(p => p.ProductId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
 
             modelBuilder.Entity<Option>()
                 .HasMany(o => o.ProductImages)
+                .WithOne(o => o.Option)
+                .HasForeignKey(o => o.OptionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Option>()
+                .HasMany(o => o.Attributes)
                 .WithOne(o => o.Option)
                 .HasForeignKey(o => o.OptionId)
                 .OnDelete(DeleteBehavior.Cascade);

@@ -68,8 +68,6 @@ namespace FYP.APIs
                         {
                             i.OptionId,
                             i.SKUNumber,
-                            i.OptionType,
-                            i.OptionValue,
                             i.CurrentQuantity,
                             i.MinimumQuantity,
                             productImages = i.ProductImages
@@ -77,6 +75,13 @@ namespace FYP.APIs
                                     p.ProductImageId,
                                     p.ImageKey,
                                     p.ImageUrl
+                                }),
+                            attributes = i.Attributes
+                                .Select(p => new
+                                {
+                                    p.AttributeId,
+                                    p.AttributeType,
+                                    p.AttributeValue
                                 })
                         })
                 });
@@ -110,19 +115,11 @@ namespace FYP.APIs
                         description = product.Description,
                         imageWidth = product.ImageWidth,
                         imageHeight = product.ImageHeight,
-                        //discountPrice = product.DiscountPrices
-                        //    .Select(i => new
-                        //    {
-                        //        i.DiscountValue,
-                        //        i.IsPercentage
-                        //    }),
                         discounts = effectiveDiscountPrice,
                         options = product.Options
                         .Select(i => new
                         {
                             i.OptionId,
-                            i.OptionType,
-                            i.OptionValue,
                             i.CurrentQuantity,
                             i.MinimumQuantity,
                             productImages = i.ProductImages
@@ -130,6 +127,13 @@ namespace FYP.APIs
                                     p.ProductImageId,
                                     p.ImageKey,
                                     p.ImageUrl
+                                }),
+                            attributes = i.Attributes
+                                .Select(p => new
+                                {
+                                    p.AttributeId,
+                                    p.AttributeType,
+                                    p.AttributeValue
                                 })
                         })
                     });
@@ -179,8 +183,6 @@ namespace FYP.APIs
                         {
                             i.OptionId,
                             i.SKUNumber,
-                            i.OptionType,
-                            i.OptionValue,
                             i.CurrentQuantity,
                             i.MinimumQuantity,
                             productImages = i.ProductImages
@@ -188,6 +190,13 @@ namespace FYP.APIs
                                     p.ProductImageId,
                                     p.ImageKey,
                                     p.ImageUrl
+                                }),
+                            attributes = i.Attributes
+                                .Select(p => new
+                                {
+                                    p.AttributeId,
+                                    p.AttributeType,
+                                    p.AttributeValue
                                 })
                         })
                 });
@@ -222,14 +231,19 @@ namespace FYP.APIs
                         .Select(i => new
                         {
                             i.OptionId,
-                            i.OptionType,
-                            i.OptionValue,
                             i.CurrentQuantity,
                             productImages = i.ProductImages
                                 .Select(p => new {
                                     p.ProductImageId,
                                     p.ImageKey,
                                     p.ImageUrl
+                                }),
+                            attributes = i.Attributes
+                                .Select(p => new
+                                {
+                                    p.AttributeId,
+                                    p.AttributeType,
+                                    p.AttributeValue
                                 })
                         })
                 });
@@ -287,7 +301,6 @@ namespace FYP.APIs
         }
 
         [HttpPost]
-        [AllowAnonymous]
         public async Task<IActionResult> CreateProduct([FromBody]Product inProduct)
         {
             // get current logged in user's id
@@ -314,7 +327,6 @@ namespace FYP.APIs
             }
         }
 
-        [AllowAnonymous]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product inProduct)
         {
@@ -340,7 +352,6 @@ namespace FYP.APIs
             }
         }
 
-        [AllowAnonymous]
         [HttpPut("stock/{id:int}/{amount:int}")]
         public async Task<IActionResult> UpdateStock(int id, int amount)
         {
@@ -361,7 +372,6 @@ namespace FYP.APIs
         }
 
         // technically can't delete products, only make them "expire"
-        [AllowAnonymous]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {

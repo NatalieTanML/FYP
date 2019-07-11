@@ -59,6 +59,8 @@ namespace FYP.Services
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
                 .ThenInclude(option => option.ProductImages)
+                .Include(product => product.Options)
+                .ThenInclude(o => o.Attributes)
                 .ToListAsync();
         }
 
@@ -71,6 +73,8 @@ namespace FYP.Services
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
                 .ThenInclude(o => o.ProductImages)
+                .Include(product => product.Options)
+                .ThenInclude(o => o.Attributes)
                 .ToListAsync();
 
             return await _cache.GetOrAddAsync($"ProductsByPage.Get.{pageNumber}", productGetter);
@@ -89,6 +93,8 @@ namespace FYP.Services
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
                 .ThenInclude(option => option.ProductImages)
+                .Include(product => product.Options)
+                .ThenInclude(o => o.Attributes)
                 .FirstOrDefaultAsync(p => p.ProductId == id);
         }
 
@@ -117,6 +123,7 @@ namespace FYP.Services
                 List<Option> newOptions = new List<Option>();
                 foreach (Option op in product.Options)
                 {
+                    // add the new images
                     List<ProductImage> newImages = new List<ProductImage>();
                     foreach (ProductImage img in op.ProductImages)
                     {
@@ -128,19 +135,29 @@ namespace FYP.Services
                             ImageUrl = img.ImageUrl
                         });
                     };
+                    // add the attributes
+                    List<Models.Attribute> newAttributes = new List<Models.Attribute>();
+                    foreach (Models.Attribute atr in op.Attributes)
+                    {
+                        newAttributes.Add(new Models.Attribute
+                        {
+                            AttributeId = atr.AttributeId,
+                            OptionId = atr.OptionId,
+                            AttributeType = atr.AttributeType,
+                            AttributeValue = atr.AttributeValue
+                        });
+                    };
                     newOptions.Add(new Option
                     {
                         OptionId = op.OptionId,
                         ProductId = op.ProductId,
                         SKUNumber = op.SKUNumber,
-                        OptionType = op.OptionType,
-                        OptionValue = op.OptionValue,
                         CurrentQuantity = int.Parse(op.CurrentQuantity.ToString()),
                         MinimumQuantity = int.Parse(op.MinimumQuantity.ToString()),
-                        ProductImages = newImages
+                        ProductImages = newImages,
+                        Attributes = newAttributes
                     });
                 }
-
 
                 // create new product object to be added
                 Product newProduct = new Product()
@@ -181,6 +198,8 @@ namespace FYP.Services
                 .Include(p => p.DiscountPrices)
                 .Include(p => p.Options)
                 .ThenInclude(p => p.ProductImages)
+                .Include(p => p.Options)
+                .ThenInclude(p => p.Attributes)
                 .SingleOrDefaultAsync();
 
             // if product does not exist
@@ -240,8 +259,6 @@ namespace FYP.Services
                         OptionId = op.OptionId,
                         ProductId = op.ProductId,
                         SKUNumber = op.SKUNumber,
-                        OptionType = op.OptionType,
-                        OptionValue = op.OptionValue,
                         CurrentQuantity = int.Parse(op.CurrentQuantity.ToString()),
                         MinimumQuantity = int.Parse(op.MinimumQuantity.ToString()),
                         ProductImages = newImages
