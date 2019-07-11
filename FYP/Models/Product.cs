@@ -27,7 +27,7 @@ namespace FYP.Models
         public int UpdatedById { get; set; }
         public User UpdatedBy { get; set; }
 
-        public int CategoryId { get; set; }
+        public int? CategoryId { get; set; }
         public Category Category { get; set; }
 
         public ICollection<DiscountPrice> DiscountPrices { get; set; }

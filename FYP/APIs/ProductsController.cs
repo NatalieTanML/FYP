@@ -74,7 +74,8 @@ namespace FYP.APIs
                                 .Select(p => new {
                                     p.ProductImageId,
                                     p.ImageKey,
-                                    p.ImageUrl
+                                    p.ImageUrl,
+                                    p.ImageSize
                                 }),
                             attributes = i.Attributes
                                 .Select(p => new
@@ -164,11 +165,11 @@ namespace FYP.APIs
                     imageWidth = product.ImageWidth,
                     imageHeight = product.ImageHeight,
                     effectiveStartDate = product.EffectiveStartDate,
-                    effectiveEndDate = product.EffectiveEndDate,
+                    effectiveEndDate = (DateTime?) product.EffectiveEndDate,
                     updatedAt = product.UpdatedAt,
                     updatedById = product.UpdatedById,
-                    categoryId = product.CategoryId,
-                    categoryName = product.Category.CategoryName,
+                    categoryId = (int?) product.CategoryId,
+                    categoryName = product.Category?.CategoryName,
                     discountPrice = product.DiscountPrices
                         .Select(i => new
                         {
@@ -189,7 +190,8 @@ namespace FYP.APIs
                                 .Select(p => new {
                                     p.ProductImageId,
                                     p.ImageKey,
-                                    p.ImageUrl
+                                    p.ImageUrl,
+                                    p.ImageSize
                                 }),
                             attributes = i.Attributes
                                 .Select(p => new
@@ -301,6 +303,7 @@ namespace FYP.APIs
         }
 
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> CreateProduct([FromBody]Product inProduct)
         {
             // get current logged in user's id
@@ -327,19 +330,17 @@ namespace FYP.APIs
             }
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product inProduct)
+        [HttpPut]
+        [AllowAnonymous]
+        public async Task<IActionResult> UpdateProduct([FromBody] Product inProduct)
         {
             // get current logged in user's id
             //int currentUserId = int.Parse(User.FindFirst("userid").Value);
             int currentUserId = 4;
-
-            inProduct.ProductId = id;
             inProduct.UpdatedById = currentUserId;
             
             try
             {
-                // save (excluding password update)
                 await _productService.Update(inProduct);
                 return Ok(new {
                     message = "Updated product details successfully!"
