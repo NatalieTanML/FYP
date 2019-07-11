@@ -187,7 +187,8 @@ namespace FYP.APIs
                                 .Select(p => new {
                                     p.ProductImageId,
                                     p.ImageKey,
-                                    p.ImageUrl
+                                    p.ImageUrl,
+                                    p.ImageSize
                                 })
                         })
                 });

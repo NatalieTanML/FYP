@@ -125,7 +125,8 @@ namespace FYP.Services
                             ProductImageId = img.ProductImageId,
                             OptionId = img.OptionId,
                             ImageKey = img.ImageKey,
-                            ImageUrl = img.ImageUrl
+                            ImageUrl = img.ImageUrl,
+                            ImageSize = img.ImageSize
                         });
                     };
                     newOptions.Add(new Option
