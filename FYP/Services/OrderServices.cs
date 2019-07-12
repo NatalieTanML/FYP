@@ -43,6 +43,7 @@ namespace FYP.Services
         private readonly IConfiguration _configuration;
         private readonly IOrderHub _orderHub;
         private readonly IS3Service _s3Service;
+        private readonly IProductService _productService;
 
         private readonly string encryptionKey;
         
@@ -50,13 +51,15 @@ namespace FYP.Services
             IOptions<AppSettings> appSettings,
             IConfiguration configuration,
             IOrderHub orderHub, 
-            IS3Service s3Service)
+            IS3Service s3Service,
+            IProductService productService)
         {
             _context = context;
             _appSettings = appSettings.Value;
             _configuration = configuration;
             _orderHub = orderHub;
             _s3Service = s3Service;
+            _productService = productService;
 
             // get encryption key for email
             encryptionKey = _configuration.GetValue<string>("Encryption:Key");
@@ -68,13 +71,16 @@ namespace FYP.Services
                 .Include(o => o.UpdatedBy)
                 .Include(o => o.DeliveryType)
                 .Include(o => o.Address)
-                .ThenInclude(o => o.Hotel)
+                    .ThenInclude(o => o.Hotel)
                 .Include(o => o.Status)
                 .Include(o => o.DeliveryMan)
                 .Include(o => o.OrderRecipient)
                 .Include(o => o.OrderItems)
-                .ThenInclude(o => o.Option)
-                .ThenInclude(o => o.Product)
+                    .ThenInclude(o => o.Option)
+                        .ThenInclude(o => o.Product)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(o => o.Option)
+                        .ThenInclude(o => o.Attributes)
                 .ToListAsync();
 
             foreach (Order order in orders)
@@ -91,13 +97,16 @@ namespace FYP.Services
                 .Include(o => o.UpdatedBy)
                 .Include(o => o.DeliveryType)
                 .Include(o => o.Address)
-                .ThenInclude(o => o.Hotel)
+                    .ThenInclude(o => o.Hotel)
                 .Include(o => o.Status)
                 .Include(o => o.DeliveryMan)
                 .Include(o => o.OrderRecipient)
                 .Include(o => o.OrderItems)
-                .ThenInclude(o => o.Option)
-                .ThenInclude(o => o.Product)
+                    .ThenInclude(o => o.Option)
+                        .ThenInclude(o => o.Product)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(o => o.Option)
+                        .ThenInclude(o => o.Attributes)
                 .FirstOrDefaultAsync(o => o.OrderId == id);
 
             order.EmailString = DecryptString(order.Email, encryptionKey);
@@ -109,16 +118,22 @@ namespace FYP.Services
         {
             try
             {
-                // assume that customers can still place order even if no stock
-                // order will be put into "preorder" or similar state, since 
-                // stock can be replenished easily (items are not limited/rare).
                 foreach (OrderItem orderItem in order.OrderItems)
                 {
+                    // update the stock count
                     var currentOption = await _context.Options.FirstOrDefaultAsync(o => o.OptionId == orderItem.OptionId);
+                    currentOption.CurrentQuantity -= orderItem.Quantity;
+                    _context.Options.Update(currentOption);
                     
-                        currentOption.CurrentQuantity -= orderItem.Quantity;
-                        _context.Options.Update(currentOption);
-                    
+                    // do stock check
+                    if (currentOption.CurrentQuantity < currentOption.MinimumQuantity)
+                    {
+                        // TODO: insert method here to call the email service for low stock
+
+
+                        // call the hub to notify the admins
+                        await _orderHub.NotifyLowStock(currentOption);
+                    }
                 }
 
                 List<string> imgKeys = new List<string>();
