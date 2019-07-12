@@ -96,6 +96,7 @@ namespace FYP.APIs
                             options = (new
                             {
                                 optionId = i.Option.OptionId,
+                                skuNumber = i.Option.SKUNumber,
                                 attributes = i.Option.Attributes
                                     .Select(e => new
                                     {
