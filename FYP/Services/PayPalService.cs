@@ -32,10 +32,26 @@ namespace FYP.Services
 
         public async Task<Product> VerifyUserCart(UserProduct userProduct)
         {
-            return await _context.Products
+            var product = await _context.Products
                 .Include(p => p.Options)
                 .FirstOrDefaultAsync(p => p.ProductId == userProduct.ProductId);
-            //if (product.)
+
+            var option = product.Options
+                .Where(o => o.OptionId == userProduct.OptionId)
+                .FirstOrDefault();
+
+            // check the stock first
+            // the reason why i put < 3 is to allow the warehouse to have 3 items
+            // as backup stock, in case printing errors happen and they have to consume
+            // existing stock. update the quantity here as needed/required
+            if (option.CurrentQuantity < 3 || userProduct.Quantity > option.CurrentQuantity)
+            {
+                throw new AppException("Insufficient stock quantity. Please contact us for more info.");
+            }
+            else
+            {
+                return product;
+            }
         }
 
         public async Task<HttpResponse> CreatePaypalTransaction(List<UserProduct> userProducts)
@@ -123,23 +139,6 @@ namespace FYP.Services
                         }
                     },
                     Items = lineItems
-
-                    //Shipping = new ShippingDetails
-                    //{
-                    //    Name = new Name
-                    //    {
-                    //        FullName = "John Doe"
-                    //    },
-                    //    AddressPortable = new AddressPortable
-                    //    {
-                    //        AddressLine1 = "123 Townsend St",
-                    //        AddressLine2 = "Floor 6",
-                    //        AdminArea2 = "San Francisco",
-                    //        AdminArea1 = "CA",
-                    //        PostalCode = "94107",
-                    //        CountryCode = "US"
-                    //    }
-                    //}
                 }
             }
         };

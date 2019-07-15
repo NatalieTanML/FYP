@@ -14,6 +14,7 @@ namespace FYP.Hubs
     {
         Task NotifyOneChange(Order newOrder);
         Task NotifyMultipleChanges(List<Order> newOrders);
+        Task NotifyLowStock(Option option);
     }
 
     public class OrderHub : Hub, IOrderHub
@@ -33,6 +34,11 @@ namespace FYP.Hubs
         public async Task NotifyMultipleChanges(List<Order> newOrders)
         {
             await _hubContext.Clients.All.SendAsync("MultipleOrders", newOrders);
+        }
+
+        public async Task NotifyLowStock(Option option)
+        {
+            await _hubContext.Clients.All.SendAsync("LowStock", option);
         }
     }
 }
