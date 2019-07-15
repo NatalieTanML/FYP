@@ -115,7 +115,7 @@ namespace FYP.Services
                     BrandName = "KidzaniaSG",
                     LandingPage = "BILLING",
                     UserAction = "CONTINUE",
-                    ShippingPreference = "SET_PROVIDED_ADDRESS"
+                    ShippingPreference = "NO_SHIPPING"
                 },
                 PurchaseUnits = new List<PurchaseUnitRequest>
                 {
@@ -139,23 +139,6 @@ namespace FYP.Services
                         }
                     },
                     Items = lineItems
-
-                    //Shipping = new ShippingDetails
-                    //{
-                    //    Name = new Name
-                    //    {
-                    //        FullName = "John Doe"
-                    //    },
-                    //    AddressPortable = new AddressPortable
-                    //    {
-                    //        AddressLine1 = "123 Townsend St",
-                    //        AddressLine2 = "Floor 6",
-                    //        AdminArea2 = "San Francisco",
-                    //        AdminArea1 = "CA",
-                    //        PostalCode = "94107",
-                    //        CountryCode = "US"
-                    //    }
-                    //}
                 }
             }
         };
