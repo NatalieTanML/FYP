@@ -20,7 +20,6 @@ namespace FYP.Services
 
     public class EmailService : IEmailService
     {
-        private ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
         private readonly IConfiguration _configuration;
         private readonly IUserService _userService;
@@ -30,7 +29,6 @@ namespace FYP.Services
             IConfiguration configuration,
             IUserService userService)
         {
-            _context = context;
             _appSettings = appSettings.Value;
             _configuration = configuration;
             _userService = userService;
