@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using MimeKit;
 using System;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace FYP.APIs
@@ -39,10 +40,7 @@ namespace FYP.APIs
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("FYP", configuration["Email:Account"]));
             message.To.Add(new MailboxAddress("FYP", configuration["Email:Receiver"]));
-            //foreach (string emails in emailAccounts)
-            //{
-            //     message.To.Add(new MailboxAddress("FYP", emails));
-            // }
+
             foreach (User user in users)
             {
                 message.To.Add(new MailboxAddress("FYP", user.Email));
@@ -53,7 +51,6 @@ namespace FYP.APIs
             {
                 Text = "test yooo"
             };
-
             using (var client = new MailKit.Net.Smtp.SmtpClient())
             {
 
@@ -76,18 +73,13 @@ namespace FYP.APIs
                 client.Dispose();
             }
 
-
-
-
-
-
             return Ok(new
             {
                 message = "Done"
             });
         }
 
-        [HttpPost]
+        [HttpPost("message")]
         public async Task<IActionResult> CreateMessage([FromBody]Enquiries enquiries)
         {
 
@@ -116,15 +108,17 @@ namespace FYP.APIs
                     "<br>" + "<br>" +
                     newEnquiries.message +
                     "<br>" + "<br>" +
-                    newEnquiries.name +
-                    "<br>" + "<br>" +
-                    "<i>This is a system generate email, please do not reply to this email.</i>" +
+                    "<i>Customer Name: </i>" + newEnquiries.name +
                     "<br>" +
-                    "<i>Please click on customer email to start reply </i>" +
-                    "<a href = 'mailto:" + newEnquiries.email +
+                    "<i>Customer Email: </i>" +
+                     "<a href = 'mailto:" + newEnquiries.email +
                     "?subject=" + "Thank you for contacting Memory@YourFingerTips"
                     + "&body=" + "Hi " + newEnquiries.name + "'>"
-                    + newEnquiries.email + "</a>"
+                    + newEnquiries.email + "</a>" +
+                    "<br>" +
+                    "<i>This is a system generate email, please do not reply to this email.</i>" +
+                    "<br>" +
+                    "<i>Please click on customer email to start reply.</i>"
                 };
 
 
@@ -158,11 +152,84 @@ namespace FYP.APIs
             }
             catch (Exception ex)
             {
-                throw new AppException("Unable to create product record.", new
+                throw new AppException("Unable to send message.", new
                 {
                     message = ex.Message
                 });
             }
         }
+
+
+        [HttpPost("receipt")]
+        public async Task<IActionResult> Receipt([FromBody]Enquiries enquiries)
+        {
+
+            try
+            {
+                Enquiries newEnquiries = new Enquiries()
+                {
+                    name = enquiries.name,
+                    email = enquiries.email,
+                    message = enquiries.message
+
+                };
+
+                var builder = new ConfigurationBuilder().SetBasePath
+                    (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
+                var configuration = builder.Build();
+
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress("Memory@YourFingerTips", configuration["Email:Account"]));
+                message.To.Add(new MailboxAddress(newEnquiries.name, configuration["Email:Receiver"]));
+                message.Subject = "Thank You For Shopping at Memory@YourFingerTips";
+
+                string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"EmailTemplate\template.txt");
+                string text = System.IO.File.ReadAllText(path);
+                text = text.Replace("{{name}}", newEnquiries.name);
+                System.IO.File.WriteAllText(path, text);
+                message.Body = new TextPart("html")
+                {
+                    Text = text
+                };
+
+
+                using (var client = new MailKit.Net.Smtp.SmtpClient())
+                {
+
+                    //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
+                    //client.AuthenticationMechanisms.Remove("XOAUTH2");
+                    client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+
+                    //Google
+                    client.Connect("smtp.gmail.com", 587, false);
+                    client.Authenticate(configuration["Email:Account"], configuration["Email:Password"]);
+
+                    // Start of provider specific settings
+                    //Yhoo
+                    // client.Connect("smtp.mail.yahoo.com", 587, false);
+                    // client.Authenticate("yahoo", "password");
+
+                    // End of provider specific settings
+                    client.Send(message);
+                    client.Disconnect(true);
+                    client.Dispose();
+                }
+
+                return Ok(new
+                {
+                    message = "Done"
+                });
+
+            }
+            catch (Exception ex)
+            {
+                throw new AppException("Unable to generate email.", new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+
+
     }
 }
