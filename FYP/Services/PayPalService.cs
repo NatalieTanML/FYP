@@ -99,7 +99,7 @@ namespace FYP.Services
                     BrandName = "KidzaniaSG",
                     LandingPage = "BILLING",
                     UserAction = "CONTINUE",
-                    ShippingPreference = "SET_PROVIDED_ADDRESS"
+                    ShippingPreference = "NO_SHIPPING"
                 },
                 PurchaseUnits = new List<PurchaseUnitRequest>
                 {
