@@ -269,7 +269,6 @@ namespace FYP.Services
             // grabs valid orders with matching id
             var orders = await _context.Orders
                 .Where(i => orderIds.Contains(i.OrderId))
-                .Include(o => o.Status)
                 .ToListAsync();
 
             var statuses = await _context.Status
@@ -350,6 +349,12 @@ namespace FYP.Services
             }
             
             await _context.SaveChangesAsync();
+
+            foreach (Order or in orders)
+            {
+                or.Status = new Status() { StatusName = statuses.Where(s => s.StatusId == or.StatusId).FirstOrDefault().StatusName };
+            }
+
             await _orderHub.NotifyMultipleChanges(orders);
             return updated;
         }
