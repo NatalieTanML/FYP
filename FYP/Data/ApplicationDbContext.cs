@@ -169,6 +169,12 @@ namespace FYP.Data
                 .HasForeignKey(a => a.HotelId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            modelBuilder.Entity<Address>()
+                .HasOne(a => a.Hotel)
+                .WithMany(h => h.Addresses)
+                .HasForeignKey(a => a.HotelId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             //------------- Order - End -------------
         }
     }

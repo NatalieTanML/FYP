@@ -16,6 +16,7 @@ namespace FYP.Services
     {
         Task NotifyLowStock();
         Task CreateMessage(Enquiries enquiries);
+        Task SendEmailToUser(User user, string password, string messageSubject);
     }
 
     public class EmailService : IEmailService
@@ -67,8 +68,8 @@ namespace FYP.Services
                 client.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
                 //Google
-                client.Connect("smtp.gmail.com", 587, false);
-                client.Authenticate(configuration["Email:Account"], configuration["Email:Password"]);
+                await client.ConnectAsync("smtp.gmail.com", 587, false);
+                await client.AuthenticateAsync(configuration["Email:Account"], configuration["Email:Password"]);
 
                 // Start of provider specific settings
                 //Yhoo
@@ -76,8 +77,8 @@ namespace FYP.Services
                 // client.Authenticate("yahoo", "password");
 
                 // End of provider specific settings
-                client.Send(message);
-                client.Disconnect(true);
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
                 client.Dispose();
             }
         }
@@ -124,8 +125,8 @@ namespace FYP.Services
                 client.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
                 //Google
-                client.Connect("smtp.gmail.com", 587, false);
-                client.Authenticate(configuration["Email:Account"], configuration["Email:Password"]);
+                await client.ConnectAsync("smtp.gmail.com", 587, false);
+                await client.AuthenticateAsync(configuration["Email:Account"], configuration["Email:Password"]);
 
                 // Start of provider specific settings
                 //Yhoo
@@ -133,8 +134,41 @@ namespace FYP.Services
                 // client.Authenticate("yahoo", "password");
 
                 // End of provider specific settings
-                client.Send(message);
-                client.Disconnect(true);
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+                client.Dispose();
+            }
+        }
+
+        public async Task SendEmailToUser(User user, string password, string messageSubject)
+        {
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("WY", "weiyang35@hotmail.com"));
+            message.To.Add(new MailboxAddress("WY", user.Email));
+            message.Subject = messageSubject;
+            message.Body = new TextPart("plain")
+            {
+                Text = "Your New Password: " + password
+            };
+
+            using (var client = new MailKit.Net.Smtp.SmtpClient())
+            {
+                //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
+                //client.AuthenticationMechanisms.Remove("XOAUTH2");
+                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+
+                //Google
+                await client.ConnectAsync("smtp.office365.com", 587, false);
+                await client.AuthenticateAsync("weiyang35@hotmail.com", "S9925187E");
+
+                // Start of provider specific settings
+                //Yhoo
+                // client.Connect("smtp.mail.yahoo.com", 587, false);
+                // client.Authenticate("yahoo", "password");
+
+                // End of provider specific settings
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
                 client.Dispose();
             }
         }

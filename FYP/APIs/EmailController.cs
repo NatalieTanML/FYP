@@ -51,10 +51,9 @@ namespace FYP.APIs
             try
             {
                 await _emailService.CreateMessage(enquiries);
-
                 return Ok(new
                 {
-                    message = "Created message successfully"
+                    message = "Created message successfully!"
                 });
             }
             catch (Exception ex)

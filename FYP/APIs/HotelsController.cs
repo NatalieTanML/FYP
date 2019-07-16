@@ -28,8 +28,6 @@ namespace FYP.APIs
             _appSettings = appSettings.Value;
         }
 
-
-        // GET: api/Details
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetHotels()
@@ -50,27 +48,82 @@ namespace FYP.APIs
             return new JsonResult(hotelList);
         }
 
-        //[AllowAnonymous]
-        //[HttpGet("{id}")]
-        //public async Task<IActionResult> GetHotel(int id)
-        //{
-        //    try
-        //    {
-        //        var hotel = await _hotelService.GetById(id);
-        //        return Ok(new
-        //        {
-        //            hotelId = hotel.HotelId,
-        //            hotelName = hotel.HotelName,
-        //            hotelAddress = hotel.HotelAddress,
-        //            hotelPostalCode = hotel.HotelPostalCode
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest(new { message = ex.Message });
-        //    }
-
-        //}
+        [HttpGet("{id:int}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetOneHotel(int id)
+        {
+            try
+            {
+                var hotel = await _hotelService.GetById(id);
+                return Ok(new
+                {
+                    hotelId = hotel.HotelId,
+                    hotelName = hotel.HotelName,
+                    hotelAddress = hotel.HotelAddress,
+                    hotelPostalCode = hotel.HotelPostalCode
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
         
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> AddHotel([FromBody] Hotel newHotel)
+        {
+            try
+            {
+                await _hotelService.AddHotel(newHotel);
+                return Ok(new
+                {
+                    message = "Created hotel successfully!"
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
+        
+        [HttpPut]
+        [AllowAnonymous]
+        public async Task<IActionResult> UpdateHotel([FromBody] Hotel hotel)
+        {
+            try
+            {
+                await _hotelService.UpdateHotel(hotel);
+                return Ok(new
+                {
+                    message = "Updated hotel successfully!"
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpDelete("{id:int}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> DeleteHotel(int id)
+        {
+            try
+            {
+                await _hotelService.DeleteHotel(id);
+                return Ok(new
+                {
+                    message = "Deleted hotel successfully!"
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

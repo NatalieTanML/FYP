@@ -29,11 +29,15 @@ namespace FYP.Services
     {
         private ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
+        private readonly IEmailService _emailService;
 
-        public UserService(ApplicationDbContext context, IOptions<AppSettings> appSettings)
+        public UserService(ApplicationDbContext context, 
+            IOptions<AppSettings> appSettings,
+            IEmailService emailService)
         {
             _context = context;
             _appSettings = appSettings.Value;
+            _emailService = emailService;
         }
 
         public async Task<IEnumerable<User>> GetAll()
@@ -83,9 +87,9 @@ namespace FYP.Services
             // so that the Web API controller class code can capture the error and
             // send back a JSON response to the client side.
             if (await _context.Users.AnyAsync(u => u.Email == user.Email))
-                throw new AppException("Email " + user.Email + " is already in use");
+                throw new AppException("Email '" + user.Email + "' is already in use.");
 
-           user = GenerateNewPasswordAndEmail(user, "Registration Successful!");
+            user = GenerateNewPasswordAndEmail(user, "Registration Successful!");
 
             // Update user details
             user.CreatedAt = DateTime.Now;
@@ -192,7 +196,7 @@ namespace FYP.Services
             if (string.IsNullOrWhiteSpace(inPassword)) throw new ArgumentException("Value cannot be empty or whitespace only string.", "password");
             //The password is hashed with a new random salt.
             //https://crackstation.net/hashing-security.htm
-            using (var hmac = new System.Security.Cryptography.HMACSHA512())
+            using (var hmac = new HMACSHA512())
             {
                 inPasswordSalt = hmac.Key;
                 inPasswordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(inPassword));
@@ -206,7 +210,7 @@ namespace FYP.Services
             if (inStoredHash.Length != 64) throw new ArgumentException("Invalid length of password hash (64 bytes expected).", "passwordHash");
             if (inStoredSalt.Length != 128) throw new ArgumentException("Invalid length of password salt (128 bytes expected).", "passwordHash");
 
-            using (var hmac = new System.Security.Cryptography.HMACSHA512(inStoredSalt))
+            using (var hmac = new HMACSHA512(inStoredSalt))
             {
                 var computedHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(inPassword));
                 for (int i = 0; i < computedHash.Length; i++)
@@ -218,7 +222,7 @@ namespace FYP.Services
             return true;
         }
 
-        private static User GenerateNewPasswordAndEmail(User user, string messageSubject)
+        private User GenerateNewPasswordAndEmail(User user, string messageSubject)
         {
             //Generate random string for password.
             //interesting article https://stackoverflow.com/questions/37170388/create-a-cryptographically-secure-random-guid-in-net
@@ -235,36 +239,8 @@ namespace FYP.Services
             user.PasswordHash = passwordHash;
             user.PasswordSalt = passwordSalt;
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("WY", "weiyang35@hotmail.com"));
-            message.To.Add(new MailboxAddress("WY", user.Email));
-            message.Subject = messageSubject;
-            message.Body = new TextPart("plain")
-            {
-                Text = "Your New Password: " + password
-            };
+            _emailService.SendEmailToUser(user, password, messageSubject);
 
-            using (var client = new MailKit.Net.Smtp.SmtpClient())
-            {
-
-                //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
-                //client.AuthenticationMechanisms.Remove("XOAUTH2");
-                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-
-                //Google
-                client.Connect("smtp.office365.com", 587, false);
-                client.Authenticate("weiyang35@hotmail.com", "S9925187E");
-
-                // Start of provider specific settings
-                //Yhoo
-                // client.Connect("smtp.mail.yahoo.com", 587, false);
-                // client.Authenticate("yahoo", "password");
-
-                // End of provider specific settings
-                client.Send(message);
-                client.Disconnect(true);
-                client.Dispose();
-            }
             return user;
         }
     }
