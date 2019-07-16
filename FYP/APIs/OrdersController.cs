@@ -22,12 +22,16 @@ namespace FYP.APIs
     public class OrdersController : Controller
     {
         private IOrderService _orderService;
+        private IEmailService _emailService;
         //private IUserService _userService;
         private readonly AppSettings _appSettings;
 
-        public OrdersController(IOrderService orderService, IOptions<AppSettings> appSettings)
+        public OrdersController(IOrderService orderService, 
+            IEmailService emailService,
+            IOptions<AppSettings> appSettings)
         {
             _orderService = orderService;
+            _emailService = emailService;
             _appSettings = appSettings.Value;
         }
 
@@ -212,8 +216,11 @@ namespace FYP.APIs
         {
             try
             {
-                // try add to database
+                // add to database
                 Order newOrder = await _orderService.Create(inOrder);
+                // generate receipt
+                await _emailService.SendReceipt(newOrder);
+
                 return Ok(new
                 {
                     createSuccess = true,

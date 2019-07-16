@@ -34,53 +34,62 @@ namespace FYP.APIs
             _appSettings = appSettings.Value;
         }
 
-        [AllowAnonymous]
-        [HttpPost("signup")]
-        public async Task<IActionResult> SignUp([FromBody] User inUser)
+        [HttpGet]
+        public async Task<IActionResult> GetAllUsers()
         {
-            // set current user's id
-            //inUser.CreatedById = int.Parse(User.FindFirst("userid").Value);
-            inUser.CreatedById = 4;
-
-            try
+            var users = await _userService.GetAll();
+            List<object> userList = new List<object>();
+            foreach (User user in users)
             {
-                // save new user
-                User newUserWithId = await _userService.Create(inUser);
-                return Ok(new
+                userList.Add(new
                 {
-                    newUserWithId.UserId,
-                    signUpStatus = true,
-                    message = "User registered successfully"
+                    id = user.UserId,
+                    role = user.Role.RoleName,
+                    name = user.Name,
+                    email = user.Email,
+                    isEnabled = user.IsEnabled,
+                    createdBy = user.CreatedBy.Name,
+                    createdAt = user.CreatedAt
                 });
             }
-            catch (Exception ex)
-            {
-                // return error message if there was an exception
-                return BadRequest(new { message = ex.Message });
-            }
+            return new JsonResult(userList);
         }
 
-        [HttpPut("changepassword/{id}")]
-        [AllowAnonymous]
-        public async Task<IActionResult> ChangePassword(int id)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetUserById(int id)
         {
-            try
+            var user = await _userService.GetById(id);
+            return Ok(new
             {
-                await _userService.ChangePassword(id);
+                id = user.UserId,
+                email = user.Email,
+                name = user.Name,
+                roleName = user.Role.RoleName,
+                roleId = user.Role.RoleId,
+                isEnabled = user.IsEnabled
 
-                return Ok(new
+            });
+        }
+
+        [HttpGet("deliverymen")]
+        public async Task<IActionResult> GetAllDeliverymen()
+        {
+            var deliverymen = await _userService.GetDeliverymen();
+            List<object> userList = new List<object>();
+            foreach (User user in deliverymen)
+            {
+                userList.Add(new
                 {
-                    message = "Password has been resetted!" 
+                    id = user.UserId,
+                    role = user.Role.RoleName,
+                    name = user.Name,
+                    email = user.Email,
+                    isEnabled = user.IsEnabled,
                 });
             }
-            catch (Exception ex)
-            {
-                // return error message if there was an exception
-                return BadRequest(new { message = ex.Message });
-            }
+            return new JsonResult(userList);
         }
-
-        [AllowAnonymous]
+        
         [HttpGet("getRoles")]
         public async Task<IActionResult> GetAllRoles()
         {
@@ -90,8 +99,8 @@ namespace FYP.APIs
             {
                 rolesList.Add(new
                 {
-                   roleId = role.RoleId,
-                   roleName = role.RoleName,
+                    roleId = role.RoleId,
+                    roleName = role.RoleName,
                 });
             }
             return new JsonResult(rolesList);
@@ -142,79 +151,53 @@ namespace FYP.APIs
                 token = tokenString
             });
         }
-        [AllowAnonymous]
-        [HttpGet]
-        public async Task<IActionResult> GetAllUsers()
-        {
-            var users = await _userService.GetAll();
-            List<object> userList = new List<object>();
-            foreach (User user in users)
-            {
-                userList.Add(new
-                {
-                    id = user.UserId,
-                    role = user.Role.RoleName,
-                    name = user.Name,
-                    email = user.Email,
-                    isEnabled = user.IsEnabled,
-                    createdBy = user.CreatedBy.Name,
-                    createdAt = user.CreatedAt
-                });
-            }
-            return new JsonResult(userList);
-        }
 
         [AllowAnonymous]
-        [HttpGet("deliverymen")]
-        public async Task<IActionResult> GetAllDeliverymen()
+        [HttpPost("signup")]
+        public async Task<IActionResult> SignUp([FromBody] User inUser)
         {
-            var deliverymen = await _userService.GetDeliverymen();
-            List<object> userList = new List<object>();
-            foreach (User user in deliverymen)
+            // set current user's id
+            //inUser.CreatedById = int.Parse(User.FindFirst("userid").Value);
+            inUser.CreatedById = 4;
+
+            try
             {
-                userList.Add(new
+                // save new user
+                User newUserWithId = await _userService.Create(inUser);
+                return Ok(new
                 {
-                    id = user.UserId,
-                    role = user.Role.RoleName,
-                    name = user.Name,
-                    email = user.Email,
-                    isEnabled = user.IsEnabled,
+                    newUserWithId.UserId,
+                    signUpStatus = true,
+                    message = "User registered successfully"
                 });
             }
-            return new JsonResult(userList);
-        }
-
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetUserById(int id)
-        {
-            var user = await _userService.GetById(id);
-            return Ok(new
+            catch (Exception ex)
             {
-                id = user.UserId,
-                email = user.Email,
-                name = user.Name,
-                roleName = user.Role.RoleName,
-                roleId = user.Role.RoleId,
-                isEnabled = user.IsEnabled
-
-            });
+                // return error message if there was an exception
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
-        [HttpGet("Me")]
-        public async Task<IActionResult> Me()
+        [HttpPut("changepassword/{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ChangePassword(int id)
         {
-            int currentUserId = int.Parse(User.FindFirst("userid").Value);
-            var user = await _userService.GetById(currentUserId);
-
-            return Ok(new
+            try
             {
-                id = user.UserId,
-                userRole = user.Role.RoleName.ToLower(),
-                isEnabled = user.IsEnabled,
-                changePassword = user.ChangePassword
-            });
-        }
+                await _userService.ChangePassword(id);
 
+                return Ok(new
+                {
+                    message = "Password has been resetted!" 
+                });
+            }
+            catch (Exception ex)
+            {
+                // return error message if there was an exception
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+        
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] User inUser)
         {
@@ -238,6 +221,21 @@ namespace FYP.APIs
         {
             await _userService.Delete(id);
             return Ok(new { message = "User deleted successfully." });
+        }
+
+        [HttpGet("Me")]
+        public async Task<IActionResult> Me()
+        {
+            int currentUserId = int.Parse(User.FindFirst("userid").Value);
+            var user = await _userService.GetById(currentUserId);
+
+            return Ok(new
+            {
+                id = user.UserId,
+                userRole = user.Role.RoleName.ToLower(),
+                isEnabled = user.IsEnabled,
+                changePassword = user.ChangePassword
+            });
         }
     }
 }

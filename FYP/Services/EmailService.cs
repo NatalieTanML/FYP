@@ -1,12 +1,14 @@
 ﻿using FYP.Data;
 using FYP.Helpers;
 using FYP.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using System;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -18,10 +20,12 @@ namespace FYP.Services
     {
         Task NotifyLowStock();
         Task CreateMessage(Enquiries enquiries);
+        Task SendReceipt(Order newOrder);
     }
 
     public class EmailService : IEmailService
     {
+        private ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
         private readonly IConfiguration _configuration;
         private readonly IUserService _userService;
@@ -31,6 +35,7 @@ namespace FYP.Services
             IConfiguration configuration,
             IUserService userService)
         {
+            _context = context;
             _appSettings = appSettings.Value;
             _configuration = configuration;
             _userService = userService;
@@ -142,51 +147,16 @@ namespace FYP.Services
                 client.Dispose();
             }
         }
-
-        //public async Task SendEmailToUser(User user, string password, string messageSubject)
-        //{
-        //    var message = new MimeMessage();
-        //    message.From.Add(new MailboxAddress("WY", "weiyang35@hotmail.com"));
-        //    message.To.Add(new MailboxAddress("WY", user.Email));
-        //    message.Subject = messageSubject;
-        //    message.Body = new TextPart("plain")
-        //    {
-        //        Text = "Your New Password: " + password
-        //    };
-
-        //    using (var client = new MailKit.Net.Smtp.SmtpClient())
-        //    {
-        //        //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
-        //        //client.AuthenticationMechanisms.Remove("XOAUTH2");
-        //        client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-
-        //        //Google
-        //        await client.ConnectAsync("smtp.office365.com", 587, false);
-        //        await client.AuthenticateAsync("weiyang35@hotmail.com", "S9925187E");
-
-        //        // Start of provider specific settings
-        //        //Yhoo
-        //        // client.Connect("smtp.mail.yahoo.com", 587, false);
-        //        // client.Authenticate("yahoo", "password");
-
-        //        // End of provider specific settings
-        //        await client.SendAsync(message);
-        //        await client.DisconnectAsync(true);
-        //        client.Dispose();
-        //    }
-        //}
-
-        public async Task Receipt(Order newOrder)
+        
+        public async Task SendReceipt(Order newOrder)
         {
-
             try
             {
                 var builder = new ConfigurationBuilder().SetBasePath
                     (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
                 var configuration = builder.Build();
 
-                var order = newOrder;
-                var email = DecryptString(order.Email, configuration["Encryption:Key"]);
+                var email = DecryptString(newOrder.Email, configuration["Encryption:Key"]);
 
                 var message = new MimeMessage();
                 message.From.Add(new MailboxAddress("Memory@YourFingerTips", configuration["Email:Account"]));
@@ -194,22 +164,29 @@ namespace FYP.Services
                 //message.To.Add(new MailboxAddress("hi", "jingsong0102@gmail.com"));
                 message.Subject = "Thank You For Shopping at Memory@YourFingerTips";
                 string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"EmailTemplate\template.txt");
-                string text = System.IO.File.ReadAllText(path);
-                text = text.Replace("{{receipt_id}}", order.ReferenceNo);
-                text = text.Replace("{{date}}", order.CreatedAt.ToLongDateString());
+                string text = File.ReadAllText(path);
+                text = text.Replace("{{receipt_id}}", newOrder.ReferenceNo);
+                text = text.Replace("{{date}}", newOrder.CreatedAt.ToLongDateString());
                 var table = "";
-                foreach (OrderItem item in order.OrderItems)
+                foreach (OrderItem item in newOrder.OrderItems)
                 {
+                    // i haven't test yet so it might not work
+                    var itemProduct = await _context.Options
+                        .Where(o => o.OptionId == item.OptionId)
+                        .Include(o => o.Attributes)
+                        .Include(o => o.Product)
+                        .FirstOrDefaultAsync();
 
-                    table += "<tr class='eachItem'><td width='80%' class='purchase_item'>" + item.Option.Product.ProductName + "</td><td class='align-right' width='20%' class='purchase_item'>{{amount}}</td></tr>";
-
+                    table += "<tr class='eachItem'><td width='80%' class='purchase_item'>" + itemProduct.Product.ProductName + "</td><td class='align-right' width='20%' class='purchase_item'>{{amount}}</td></tr>";
+                    // for attributes do a foreach (Attribute atr in itemProduct.Attributes), then atr.AttributeType and atr.AttributeValue
+                    
                 }
                 text = text.Replace(
                 "<tr class='eachItem'><td width='40%' class='purchase_item'>{{description}}</td><td class='align-right' width='20%' class='purchase_item'>{{amount}}</td></tr>",
                     table);
-                text = text.Replace("{{total}}", order.OrderTotal.ToString("C", CultureInfo.CurrentCulture));
+                text = text.Replace("{{total}}", newOrder.OrderTotal.ToString("C", CultureInfo.CurrentCulture));
 
-                System.IO.File.WriteAllText(path, text);
+                File.WriteAllText(path, text);
                 message.Body = new TextPart("html")
                 {
                     Text = text
@@ -224,8 +201,8 @@ namespace FYP.Services
                     client.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
                     //Google
-                    client.Connect("smtp.gmail.com", 587, false);
-                    client.Authenticate(configuration["Email:Account"], configuration["Email:Password"]);
+                    await client.ConnectAsync("smtp.gmail.com", 587, false);
+                    await client.AuthenticateAsync(configuration["Email:Account"], configuration["Email:Password"]);
 
                     // Start of provider specific settings
                     //Yhoo
@@ -233,16 +210,11 @@ namespace FYP.Services
                     // client.Authenticate("yahoo", "password");
 
                     // End of provider specific settings
-                    client.Send(message);
-                    client.Disconnect(true);
+                    await client.SendAsync(message);
+                    await client.DisconnectAsync(true);
                     client.Dispose();
                 }
-
-                //return Ok(new
-                // {
-                //     message = "Done"
-                // });
-
+                
             }
             catch (Exception ex)
             {
