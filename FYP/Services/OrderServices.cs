@@ -27,6 +27,7 @@ namespace FYP.Services
     {
         Task<IEnumerable<Order>> GetAll();
         Task<Order> GetById(int id);
+        Task<IEnumerable<Order>> GetMultipleById(List<int> orderIds);
         Task<IEnumerable<Status>> GetAllStatus();
         Task<object> GetOrderTracking(string refNo);
         Task<Order> Create(Order order);
@@ -84,9 +85,7 @@ namespace FYP.Services
                 .ToListAsync();
 
             foreach (Order order in orders)
-            {
                 order.EmailString = DecryptString(order.Email, encryptionKey);
-            }
 
             return orders;
         }
@@ -109,9 +108,40 @@ namespace FYP.Services
                         .ThenInclude(o => o.Attributes)
                 .FirstOrDefaultAsync(o => o.OrderId == id);
 
-            order.EmailString = DecryptString(order.Email, encryptionKey);
+            if (order != null)
+                order.EmailString = DecryptString(order.Email, encryptionKey);
 
             return order;
+        }
+
+        public async Task<IEnumerable<Order>> GetMultipleById(List<int> orderIds)
+        {
+            List<Order> orders = new List<Order>();
+            foreach (int id in orderIds)
+            {
+                var order = await _context.Orders
+                    .Include(o => o.UpdatedBy)
+                    .Include(o => o.DeliveryType)
+                    .Include(o => o.Address)
+                        .ThenInclude(o => o.Hotel)
+                    .Include(o => o.Status)
+                    .Include(o => o.DeliveryMan)
+                    .Include(o => o.OrderRecipient)
+                    .Include(o => o.OrderItems)
+                        .ThenInclude(o => o.Option)
+                            .ThenInclude(o => o.Product)
+                    .Include(o => o.OrderItems)
+                        .ThenInclude(o => o.Option)
+                            .ThenInclude(o => o.Attributes)
+                    .FirstOrDefaultAsync(o => o.OrderId == id);
+
+                if (order != null)
+                {
+                    order.EmailString = DecryptString(order.Email, encryptionKey);
+                    orders.Add(order);
+                }
+            }
+            return orders;
         }
 
         public async Task<Order> Create(Order order)
@@ -171,14 +201,14 @@ namespace FYP.Services
                 // add to database
                 await _context.Orders.AddAsync(newOrder);
                 await _context.SaveChangesAsync();
-                await _orderHub.NotifyOneChange(newOrder);
+                await _orderHub.NotifyOneChange(newOrder.OrderId);
 
                 // returns product once done
                 return newOrder;
             }
             catch (Exception ex)
             {
-                throw new AppException("Unable to create product record.", new { message = ex.Message });
+                throw new AppException("Unable to create order record.", new { message = ex.Message });
             }
         }
 
@@ -256,7 +286,7 @@ namespace FYP.Services
 
                 _context.Orders.Update(order);
                 await _context.SaveChangesAsync();
-                await _orderHub.NotifyOneChange(order);
+                await _orderHub.NotifyOneChange(order.OrderId);
             }
             catch (Exception ex)
             {
@@ -349,13 +379,7 @@ namespace FYP.Services
             }
             
             await _context.SaveChangesAsync();
-
-            foreach (Order or in orders)
-            {
-                or.Status = new Status() { StatusName = statuses.Where(s => s.StatusId == or.StatusId).FirstOrDefault().StatusName };
-            }
-
-            await _orderHub.NotifyMultipleChanges(orders);
+            await _orderHub.NotifyMultipleChanges(orderIds);
             return updated;
         }
 
@@ -367,7 +391,7 @@ namespace FYP.Services
             // if orders does not exist
             if (orders == null)
                 throw new AppException("Orders not found.");
-
+            
             // update deliveryman
             foreach (Order order in orders)
             {
@@ -378,7 +402,7 @@ namespace FYP.Services
 
             _context.Orders.UpdateRange(orders);
             await _context.SaveChangesAsync();
-            await _orderHub.NotifyMultipleChanges(orders);
+            await _orderHub.NotifyMultipleChanges(orderIds);
         }
 
         public async Task UpdateRecipient(List<int> orderIds, OrderRecipient recipient, int updatedById)
@@ -404,7 +428,7 @@ namespace FYP.Services
 
             _context.Orders.UpdateRange(orders);
             await _context.SaveChangesAsync();
-            await _orderHub.NotifyMultipleChanges(orders);
+            await _orderHub.NotifyMultipleChanges(orderIds);
         }
 
         // private helper methods

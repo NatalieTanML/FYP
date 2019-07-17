@@ -206,7 +206,7 @@ namespace FYP.APIs
             }
             catch (Exception ex)
             {
-                throw new AppException("Unable to get product record.", new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -254,7 +254,7 @@ namespace FYP.APIs
             }
             catch (Exception ex)
             {
-                throw new AppException("Unable to get product record.", new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -328,7 +328,7 @@ namespace FYP.APIs
             }
             catch (Exception ex)
             {
-                throw new AppException("Unable to create product record.", new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -352,7 +352,7 @@ namespace FYP.APIs
             catch (Exception ex)
             {
                 // return error message 
-                throw new AppException("Unable to update product record.", new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -372,7 +372,7 @@ namespace FYP.APIs
             catch (Exception ex)
             {
                 // return error message 
-                throw new AppException("Unable to update stock.", new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -387,7 +387,7 @@ namespace FYP.APIs
             }
             catch (Exception ex)
             {
-                throw new AppException("Unable to delete product record.", new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
 

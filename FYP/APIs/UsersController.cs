@@ -222,20 +222,6 @@ namespace FYP.APIs
             await _userService.Delete(id);
             return Ok(new { message = "User deleted successfully." });
         }
-
-        [HttpGet("Me")]
-        public async Task<IActionResult> Me()
-        {
-            int currentUserId = int.Parse(User.FindFirst("userid").Value);
-            var user = await _userService.GetById(currentUserId);
-
-            return Ok(new
-            {
-                id = user.UserId,
-                userRole = user.Role.RoleName.ToLower(),
-                isEnabled = user.IsEnabled,
-                changePassword = user.ChangePassword
-            });
-        }
+        
     }
 }
