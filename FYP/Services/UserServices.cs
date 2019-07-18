@@ -167,6 +167,10 @@ namespace FYP.Services
                         throw new AppException("Unable to delete user record.");
                 }
             }
+            else
+            {
+                throw new AppException("User not found.");
+            }
         }
 
         public async Task<User> ChangePassword(int id)

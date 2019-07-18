@@ -49,6 +49,7 @@ namespace FYP.APIs
                     name = user.Name,
                     email = user.Email,
                     isEnabled = user.IsEnabled,
+                    changePassword = user.ChangePassword,
                     createdBy = user.CreatedBy.Name,
                     createdAt = user.CreatedAt
                 });
@@ -70,7 +71,8 @@ namespace FYP.APIs
                     name = user.Name,
                     roleName = user.Role.RoleName,
                     roleId = user.Role.RoleId,
-                    isEnabled = user.IsEnabled
+                    isEnabled = user.IsEnabled,
+                    changePassword = user.ChangePassword
                 });
             }
             catch (NullReferenceException)
@@ -222,7 +224,7 @@ namespace FYP.APIs
             {
                 // save (excluding password update)
                 await _userService.Update(inUser, password);
-                return Ok(new { message = "Completed user profile update." });
+                return Ok(new { message = "Completed user profile update!" });
             }
             catch (Exception ex)
             {
@@ -235,7 +237,7 @@ namespace FYP.APIs
         public async Task<IActionResult> DeleteUser(int id)
         {
             await _userService.Delete(id);
-            return Ok(new { message = "User deleted successfully." });
+            return Ok(new { message = "User deleted successfully!" });
         }
         
     }
