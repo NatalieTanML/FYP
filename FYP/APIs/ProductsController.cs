@@ -228,7 +228,7 @@ namespace FYP.APIs
                     imageWidth = product.ImageWidth,
                     imageHeight = product.ImageHeight,
                     categoryId = product.CategoryId,
-                    categoryName = product.Category.CategoryName,
+                    categoryName = product.Category?.CategoryName,
                     discounts = effectiveDiscountPrice,
                     options = product.Options
                         .Select(i => new

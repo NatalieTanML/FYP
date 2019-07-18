@@ -35,6 +35,7 @@ namespace FYP.APIs
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAllUsers()
         {
             var users = await _userService.GetAll();
@@ -56,22 +57,34 @@ namespace FYP.APIs
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetUserById(int id)
         {
-            var user = await _userService.GetById(id);
-            return Ok(new
+            try
             {
-                id = user.UserId,
-                email = user.Email,
-                name = user.Name,
-                roleName = user.Role.RoleName,
-                roleId = user.Role.RoleId,
-                isEnabled = user.IsEnabled
-
-            });
+                var user = await _userService.GetById(id);
+                return Ok(new
+                {
+                    id = user.UserId,
+                    email = user.Email,
+                    name = user.Name,
+                    roleName = user.Role.RoleName,
+                    roleId = user.Role.RoleId,
+                    isEnabled = user.IsEnabled
+                });
+            }
+            catch (NullReferenceException)
+            {
+                return BadRequest(new { message = "User does not exist." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpGet("deliverymen")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAllDeliverymen()
         {
             var deliverymen = await _userService.GetDeliverymen();
@@ -90,7 +103,8 @@ namespace FYP.APIs
             return new JsonResult(userList);
         }
         
-        [HttpGet("getRoles")]
+        [HttpGet("roles")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAllRoles()
         {
             var roles = await _userService.GetAllRoles();
@@ -199,6 +213,7 @@ namespace FYP.APIs
         }
         
         [HttpPut("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] User inUser)
         {
             string password = inUser.Password;
