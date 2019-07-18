@@ -3,7 +3,7 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Receipt for [Product Name]</title>
+    <title>Receipt</title>
     <!-- 
     The style block is collapsed on page load to save you some scrolling.
     Postmark automatically inlines all CSS properties for maximum email client 
@@ -140,18 +140,6 @@
     
     .content-cell {
       padding: 35px;
-    }
-    
-    .preheader {
-      display: none !important;
-      visibility: hidden;
-      mso-hide: all;
-      font-size: 1px;
-      line-height: 1px;
-      max-height: 0;
-      max-width: 0;
-      opacity: 0;
-      overflow: hidden;
     }
     /* Attribute list ------------------------------ */
     
@@ -389,18 +377,20 @@
     p.center {
       text-align: center;
     }
+    .h1{
+      text-align: center;
+    }
     </style>
   </head>
   <body>
-    <span class="preheader">This is a receipt for your recent purchase on {{ purchase_date }}. No payment is due with this receipt.</span>
-    <table class="email-wrapper" width="100%" cellpadding="0" cellspacing="0">
+   <table class="email-wrapper" width="100%" cellpadding="0" cellspacing="0">
       <tr>
         <td align="center">
           <table class="email-content" width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td class="email-masthead">
                 <a href="https://example.com" class="email-masthead_name">
-        [Product Name]
+        Memories @ Your FingerTips
       </a>
               </td>
             </tr>
@@ -411,24 +401,24 @@
                   <!-- Body content -->
                   <tr>
                     <td class="content-cell">
-                      <h1>Hi {{name}},</h1>
-                      <p>Thanks for using [Product Name]. This email is the receipt for your purchase. No payment is due.</p>
-                      <p>This purchase will appear as “[Credit Card Statement Name]” on your credit card statement for your {{credit_card_brand}} ending in {{credit_card_last_four}}. Need to <a href="{{billing_url}}">update your payment information</a>?</p>
-                      <!-- Discount -->
-                      <table class="discount" align="center" width="100%" cellpadding="0" cellspacing="0">
+                      <h1 class="h1">Thank You For Shopping at Memories @ Your FingerTips!</h1>
+                      <h2>Your order is on its way!</h2>
+                      <p>We have received your order, our staff is preparing your items. This purchase will appear as paypal on your credit card statement for your ending in. Need to <a href= "mailto:fypkidzania2019@gmail.com?subject=Update Shipping Address of Order {{OrderRef}}">update your shipping information</a>?</p>
+                    <!-- Track order --> 
+                    <table class="discount" align="center" width="100%" cellpadding="0" cellspacing="0">
                         <tr>
                           <td align="center">
-                            <h1 class="discount_heading">10% off your next purchase!</h1>
-                            <p class="discount_body">Thanks for your support! Here's a coupon for 10% off your next purchase if used by {{expiration_date}}.</p>
-                            <!-- Border based button
-                       https://litmus.com/blog/a-guide-to-bulletproof-buttons-in-email-design -->
+                            <h1 class="discount_heading">Track Your Order</h1>
+                            <p class="discount_body">You can click the button below and track your order status now !</p>
+                            <!-- Border based buttonn 
+                       https://litmus.com/blog/a-guide-to-bulletproof-buttons-in-email-design --> 
                             <table width="100%" border="0" cellspacing="0" cellpadding="0">
                               <tr>
                                 <td align="center">
                                   <table border="0" cellspacing="0" cellpadding="0">
                                     <tr>
                                       <td>
-                                        <a href="http://example.com" class="button button--green" target="_blank">Use this discount now...</a>
+                                        <a href="http://localhost:8080/#/trackOrder" class="button button--green" target="_blank">Track Your Order</a>
                                       </td>
                                     </tr>
                                   </table>
@@ -450,21 +440,16 @@
                             <table class="purchase_content" width="100%" cellpadding="0" cellspacing="0">
                               <tr>
                                 <th class="purchase_heading">
-                                  <p>Description</p>
+                                  <p>Order Item(s)</p>
                                 </th>
                                 <th class="purchase_heading">
                                   <p class="align-right">Amount</p>
                                 </th>
                               </tr>
-                              {{#each receipt_details}}
-                              <tr>
-                                <td width="80%" class="purchase_item">{{description}}</td>
-                                <td class="align-right" width="20%" class="purchase_item">{{amount}}</td>
-                              </tr>
-                              {{/each}}
+                              <tr class='eachItem'><td width='40%' class='purchase_item'>{{description}}</td><td class='align-right' width='20%' class='purchase_item'>{{amount}}</td></tr>
                               <tr>
                                 <td width="80%" class="purchase_footer" valign="middle">
-                                  <p class="purchase_total purchase_total--label">Total</p>
+                                  <p class="purchase_total purchase_total--label">Total :</p>
                                 </td>
                                 <td width="20%" class="purchase_footer" valign="middle">
                                   <p class="purchase_total">{{total}}</p>
@@ -474,9 +459,27 @@
                           </td>
                         </tr>
                       </table>
-                      <p>If you have any questions about this receipt, simply reply to this email or reach out to our <a href="{{support_url}}">support team</a> for help.</p>
-                      <p>Cheers,
-                        <br>The [Product Name] Team</p>
+                      <!-- Shipping -->
+                      <table class="purchase" width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td>
+                            <h3>Shipping Address</h3></td>
+                        </tr>
+                        <tr>
+                          <td colspan="2">
+                              <tr width="20%" class='deliveryAdd'><td width='40%' class='purchase_item'>{{ShippingAddress}}</td>
+                              <tr>
+                                <td width="20%" class="purchase_footer" valign="middle">
+                                </td>
+                              </tr>
+                          </td>
+                        </tr>
+                      </table>
+                      <!-- Special Request -->
+                      <!-- SR content -->
+                      <p>If you have any questions about this receipt, please contact our <a href= "mailto:fypkidzania2019@gmail.com">support team</a> for help.</p>
+                      <p>Cheers,</p>
+                      <p>The Memories@YourFingerTips Team</p>
                       <!-- Action -->
                       <table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0">
                         <tr>
@@ -489,7 +492,7 @@
                                   <table border="0" cellspacing="0" cellpadding="0">
                                     <tr>
                                       <td>
-                                        <a href="{{action_url}}" class="button button--blue" target="_blank">Download as PDF</a>
+                                        <a  href="http://localhost:8080/#/contactUs" class="button button--blue" target="_blank">Contact Us</a>
                                       </td>
                                     </tr>
                                   </table>
@@ -503,8 +506,8 @@
                       <table class="body-sub">
                         <tr>
                           <td>
-                            <p class="sub">Need a printable copy for your records?</strong> You can <a href="{{action_url}}">download a PDF version</a>.</p>
-                            <p class="sub">Moved recently? Have a new credit card? You can easily <a href="{{billing_url}}">update your billing information</a>.</p>
+                            <p class="sub">Need a printable copy for your records?</strong> You can download a PDF version</a>.</p>
+                            <p class="sub">Moved recently? You can contact our support team to update your billing information.</p>
                           </td>
                         </tr>
                       </table>
@@ -518,12 +521,14 @@
                 <table class="email-footer" align="center" width="570" cellpadding="0" cellspacing="0">
                   <tr>
                     <td class="content-cell" align="center">
-                      <p class="sub align-center">&copy; 2019 [Product Name]. All rights reserved.</p>
+                      <p class="sub align-center">&copy; 2019 Memories@YourFingerTips. All rights reserved.</p>
                       <p class="sub align-center">
-                        [Company Name, LLC]
-                        <br>1234 Street Rd.
-                        <br>Suite 1234
+                        Kidzania Singapore
+                        <br>Palawan Kidz City.
+                        <br>31 Beach View #01-01/02
+						<br>Singapore 098008.
                       </p>
+                      <img src="https://d1eilicilqktnj.cloudfront.net/system_configs/color_logos/22/original/kz-logo-2-color.svg?1512587654" alt="kidzania" width="150" height="150">
                     </td>
                   </tr>
                 </table>

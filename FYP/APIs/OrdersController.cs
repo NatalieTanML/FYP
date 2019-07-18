@@ -1,17 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using FYP.Helpers;
-using FYP.Hubs;
+﻿using FYP.Helpers;
 using FYP.Models;
 using FYP.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -26,7 +23,7 @@ namespace FYP.APIs
         //private IUserService _userService;
         private readonly AppSettings _appSettings;
 
-        public OrdersController(IOrderService orderService, 
+        public OrdersController(IOrderService orderService,
             IEmailService emailService,
             IOptions<AppSettings> appSettings)
         {
@@ -233,7 +230,7 @@ namespace FYP.APIs
                 throw new AppException("Unable to create order record.", new { message = ex.Message });
             }
         }
-        
+
         [HttpGet("track/{refNo}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetOrderTracking(string refNo)
@@ -323,7 +320,7 @@ namespace FYP.APIs
         [HttpPut("deliveryman/{deliveryManId:int}")]
         public async Task<IActionResult> AssignDeliveryman([FromBody] List<int> orderIds, int deliveryManId)
         {
-            
+
             int updatedById = 4; // update to current user
             try
             {
