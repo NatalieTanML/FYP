@@ -206,7 +206,9 @@ namespace FYP.Services
             // product exists, try to update
             try {
                 // checks if another product with the same name exists already
-                if (await _context.Products.CountAsync(p => p.ProductName == productParam.ProductName) > 1)
+                if (await _context.Products
+                    .Where(p => p.ProductId != productParam.ProductId)
+                    .AnyAsync(p => p.ProductName == productParam.ProductName))
                 {
                     throw new AppException("Product name '" + productParam.ProductName + "' already exists in the database.");
                 }

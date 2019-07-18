@@ -1,16 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using FYP.Helpers;
+﻿using FYP.Helpers;
 using FYP.Models;
 using FYP.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -24,7 +22,7 @@ namespace FYP.APIs
         //private IUserService _userService;
         private readonly AppSettings _appSettings;
 
-        public ProductsController(IProductService productService, 
+        public ProductsController(IProductService productService,
             IOptions<AppSettings> appSettings)
         {
             _productService = productService;
@@ -71,7 +69,8 @@ namespace FYP.APIs
                             i.CurrentQuantity,
                             i.MinimumQuantity,
                             productImages = i.ProductImages
-                                .Select(p => new {
+                                .Select(p => new
+                                {
                                     p.ProductImageId,
                                     p.ImageKey,
                                     p.ImageUrl,
@@ -103,11 +102,11 @@ namespace FYP.APIs
                 var totalNumberOfProducts = await _productService.GetTotalNumberOfProducts();
 
                 List<object> productList = new List<object>();
-                
+
                 foreach (Product product in products)
                 {
                     var effectiveDiscountPrice = RetrieveEffectiveDiscount(product);
-             
+
                     productList.Add(new
                     {
                         productId = product.ProductId,
@@ -124,7 +123,8 @@ namespace FYP.APIs
                             i.CurrentQuantity,
                             i.MinimumQuantity,
                             productImages = i.ProductImages
-                                .Select(p => new {
+                                .Select(p => new
+                                {
                                     p.ProductImageId,
                                     p.ImageKey,
                                     p.ImageUrl
@@ -165,10 +165,10 @@ namespace FYP.APIs
                     imageWidth = product.ImageWidth,
                     imageHeight = product.ImageHeight,
                     effectiveStartDate = product.EffectiveStartDate,
-                    effectiveEndDate = (DateTime?) product.EffectiveEndDate,
+                    effectiveEndDate = (DateTime?)product.EffectiveEndDate,
                     updatedAt = product.UpdatedAt,
                     updatedById = product.UpdatedById,
-                    categoryId = (int?) product.CategoryId,
+                    categoryId = (int?)product.CategoryId,
                     categoryName = product.Category?.CategoryName,
                     discountPrice = product.DiscountPrices
                         .Select(i => new
@@ -187,7 +187,8 @@ namespace FYP.APIs
                             i.CurrentQuantity,
                             i.MinimumQuantity,
                             productImages = i.ProductImages
-                                .Select(p => new {
+                                .Select(p => new
+                                {
                                     p.ProductImageId,
                                     p.ImageKey,
                                     p.ImageUrl,
@@ -205,7 +206,7 @@ namespace FYP.APIs
             }
             catch (Exception ex)
             {
-                throw new AppException("Unable to get product record.", new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -217,7 +218,7 @@ namespace FYP.APIs
             {
                 var product = await _productService.GetById(id);
                 var effectiveDiscountPrice = RetrieveEffectiveDiscount(product);
- 
+
                 return Ok(new
                 {
                     productId = product.ProductId,
@@ -235,7 +236,8 @@ namespace FYP.APIs
                             i.OptionId,
                             i.CurrentQuantity,
                             productImages = i.ProductImages
-                                .Select(p => new {
+                                .Select(p => new
+                                {
                                     p.ProductImageId,
                                     p.ImageKey,
                                     p.ImageUrl
@@ -252,7 +254,7 @@ namespace FYP.APIs
             }
             catch (Exception ex)
             {
-                throw new AppException("Unable to get product record.", new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -272,7 +274,7 @@ namespace FYP.APIs
                     if (productDiscount.IsPercentage)
                     {
                         // Calculate the discounted price based on discount percentage
-                        var discountPrice = 
+                        var discountPrice =
                             Math.Round(basePrice - (basePrice * (productDiscount.DiscountValue) / 100), 2);
 
                         effectiveDiscountPrice.Add(new
@@ -286,7 +288,7 @@ namespace FYP.APIs
                     else
                     {
                         // Calculate the discount percentage based on the discount price
-                        var discountPercentage = 
+                        var discountPercentage =
                             Math.Ceiling((basePrice - productDiscount.DiscountValue) / basePrice * 100);
 
                         effectiveDiscountPrice.Add(new
@@ -326,7 +328,7 @@ namespace FYP.APIs
             }
             catch (Exception ex)
             {
-                throw new AppException("Unable to create product record.", new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -338,21 +340,23 @@ namespace FYP.APIs
             //int currentUserId = int.Parse(User.FindFirst("userid").Value);
             int currentUserId = 4;
             inProduct.UpdatedById = currentUserId;
-            
+
             try
             {
                 await _productService.Update(inProduct);
-                return Ok(new {
+                return Ok(new
+                {
                     message = "Updated product details successfully!"
                 });
             }
             catch (Exception ex)
             {
                 // return error message 
-                throw new AppException("Unable to update product record.", new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
+        [AllowAnonymous]
         [HttpPut("stock/{id:int}/{amount:int}")]
         public async Task<IActionResult> UpdateStock(int id, int amount)
         {
@@ -368,7 +372,7 @@ namespace FYP.APIs
             catch (Exception ex)
             {
                 // return error message 
-                throw new AppException("Unable to update stock.", new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -383,9 +387,9 @@ namespace FYP.APIs
             }
             catch (Exception ex)
             {
-                throw new AppException("Unable to delete product record.", new { message = ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
-        
+
     }
 }

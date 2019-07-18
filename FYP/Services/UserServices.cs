@@ -30,7 +30,8 @@ namespace FYP.Services
         private ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
 
-        public UserService(ApplicationDbContext context, IOptions<AppSettings> appSettings)
+        public UserService(ApplicationDbContext context, 
+            IOptions<AppSettings> appSettings)
         {
             _context = context;
             _appSettings = appSettings.Value;
@@ -83,9 +84,9 @@ namespace FYP.Services
             // so that the Web API controller class code can capture the error and
             // send back a JSON response to the client side.
             if (await _context.Users.AnyAsync(u => u.Email == user.Email))
-                throw new AppException("Email " + user.Email + " is already in use");
+                throw new AppException("Email '" + user.Email + "' is already in use.");
 
-           user = GenerateNewPasswordAndEmail(user, "Registration Successful!");
+            user = await GenerateNewPasswordAndEmail(user, "Registration Successful!");
 
             // Update user details
             user.CreatedAt = DateTime.Now;
@@ -171,7 +172,7 @@ namespace FYP.Services
         public async Task<User> ChangePassword(int id)
         {
             var user = await _context.Users.FindAsync(id);
-            user = GenerateNewPasswordAndEmail(user, "Reset Password");
+            user = await GenerateNewPasswordAndEmail(user, "Reset Password");
 
             // Update user details
             user.UpdatedAt = DateTime.Now;
@@ -192,7 +193,7 @@ namespace FYP.Services
             if (string.IsNullOrWhiteSpace(inPassword)) throw new ArgumentException("Value cannot be empty or whitespace only string.", "password");
             //The password is hashed with a new random salt.
             //https://crackstation.net/hashing-security.htm
-            using (var hmac = new System.Security.Cryptography.HMACSHA512())
+            using (var hmac = new HMACSHA512())
             {
                 inPasswordSalt = hmac.Key;
                 inPasswordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(inPassword));
@@ -206,7 +207,7 @@ namespace FYP.Services
             if (inStoredHash.Length != 64) throw new ArgumentException("Invalid length of password hash (64 bytes expected).", "passwordHash");
             if (inStoredSalt.Length != 128) throw new ArgumentException("Invalid length of password salt (128 bytes expected).", "passwordHash");
 
-            using (var hmac = new System.Security.Cryptography.HMACSHA512(inStoredSalt))
+            using (var hmac = new HMACSHA512(inStoredSalt))
             {
                 var computedHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(inPassword));
                 for (int i = 0; i < computedHash.Length; i++)
@@ -218,7 +219,7 @@ namespace FYP.Services
             return true;
         }
 
-        private static User GenerateNewPasswordAndEmail(User user, string messageSubject)
+        private async Task<User> GenerateNewPasswordAndEmail(User user, string messageSubject)
         {
             //Generate random string for password.
             //interesting article https://stackoverflow.com/questions/37170388/create-a-cryptographically-secure-random-guid-in-net
@@ -246,14 +247,13 @@ namespace FYP.Services
 
             using (var client = new MailKit.Net.Smtp.SmtpClient())
             {
-
                 //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
                 //client.AuthenticationMechanisms.Remove("XOAUTH2");
                 client.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
                 //Google
-                client.Connect("smtp.office365.com", 587, false);
-                client.Authenticate("weiyang35@hotmail.com", "S9925187E");
+                await client.ConnectAsync("smtp.office365.com", 587, false);
+                await client.AuthenticateAsync("weiyang35@hotmail.com", "S9925187E");
 
                 // Start of provider specific settings
                 //Yhoo
@@ -261,10 +261,11 @@ namespace FYP.Services
                 // client.Authenticate("yahoo", "password");
 
                 // End of provider specific settings
-                client.Send(message);
-                client.Disconnect(true);
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
                 client.Dispose();
             }
+
             return user;
         }
     }

@@ -141,7 +141,7 @@ namespace FYP.Services
                     Items = lineItems
                 }
             }
-        };
+            };
             return orderRequest;
         }
 
