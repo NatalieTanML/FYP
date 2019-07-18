@@ -66,7 +66,7 @@ namespace FYP.Services
 
         public async Task<IEnumerable<Product>> GetByPage(int pageNumber, int productsPerPage)
         {
-            async Task<IEnumerable<Product>> productGetter() => await _context.Products
+            return await _context.Products
                 .Skip((pageNumber - 1) * productsPerPage)
                 .Take(productsPerPage)
                 .Include(product => product.Category)
@@ -76,8 +76,6 @@ namespace FYP.Services
                 .Include(product => product.Options)
                 .ThenInclude(o => o.Attributes)
                 .ToListAsync();
-
-            return await _cache.GetOrAddAsync($"ProductsByPage.Get.{pageNumber}", productGetter);
         }
 
         public async Task<int> GetTotalNumberOfProducts()
