@@ -58,10 +58,7 @@ namespace FYP.APIs
             }
             catch (Exception ex)
             {
-                throw new AppException("Unable to create message.", new
-                {
-                    message = ex.Message
-                });
+                return BadRequest(new { message = ex.Message });
             }
         }
     }
