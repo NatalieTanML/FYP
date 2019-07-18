@@ -422,7 +422,7 @@ namespace FYP.APIs
             }
         }
 
-        [HttpGet("getAllDeliveryTypes")]
+        [HttpGet("deliverytypes")]
         public async Task<IActionResult> GetAllDeliveryTypes()
         {
             var deliveryTypes = await _orderService.GetAllDeliveryTypes();
