@@ -35,6 +35,7 @@ namespace FYP.Services
         Task<List<object>> UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful);
         Task AssignDeliveryman(List<int> orderIds, int deliveryManId, int updatedById);
         Task UpdateRecipient(List<int> orderIds, OrderRecipient recipient, int updatedById);
+        Task<IEnumerable<DeliveryType>> GetAllDeliveryTypes();
     }
 
     public class OrderService : IOrderService
@@ -493,6 +494,15 @@ namespace FYP.Services
                     return result;
                 }
             }
+        }
+
+        public async Task<IEnumerable<DeliveryType>> GetAllDeliveryTypes()
+        {
+            List<DeliveryType> deliveryTypes = await _context.DeliveryTypes
+                .ToListAsync();
+
+
+            return deliveryTypes;
         }
     }
 }

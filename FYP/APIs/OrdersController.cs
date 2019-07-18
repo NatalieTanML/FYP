@@ -208,7 +208,7 @@ namespace FYP.APIs
             }
         }
 
-        [HttpGet("multi")]
+        [HttpPost("multi")]
         [AllowAnonymous]
         public async Task<IActionResult> GetMultipleById([FromBody] List<int> orderIds)
         {
@@ -420,6 +420,14 @@ namespace FYP.APIs
                 // return error message 
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        [HttpGet("getAllDeliveryTypes")]
+        public async Task<IActionResult> GetAllDeliveryTypes()
+        {
+            var deliveryTypes = await _orderService.GetAllDeliveryTypes();
+          
+            return new JsonResult(deliveryTypes);
         }
 
         [HttpPut("recipient")]
