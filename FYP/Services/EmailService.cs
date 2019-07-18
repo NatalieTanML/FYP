@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Attribute = FYP.Models.Attribute;
 
 namespace FYP.Services
 {
@@ -117,10 +118,10 @@ namespace FYP.Services
                     "<br>" +
                     "<i>Customer Email: </i>" +
                      "<a href = 'mailto:" + newEnquiries.email +
-                    "?subject=" + "Thank you for contacting Memory@YourFingerTips"
+                    "?subject=" + "New enquiries about Memories@YourFingerTips"
                     + "&body=" + "Hi " + newEnquiries.name + "'>"
                     + newEnquiries.email + "</a>" +
-                    "<br>" +
+                    "<br>" + "<br>" +
                     "<i>This is a system generate email, please do not reply to this email.</i>" +
                     "<br>" +
                     "<i>Please click on customer email to start reply.</i>"
@@ -147,7 +148,7 @@ namespace FYP.Services
                 client.Dispose();
             }
         }
-        
+
         public async Task SendReceipt(Order newOrder)
         {
             try
@@ -161,32 +162,73 @@ namespace FYP.Services
                 var message = new MimeMessage();
                 message.From.Add(new MailboxAddress("Memory@YourFingerTips", configuration["Email:Account"]));
                 message.To.Add(new MailboxAddress(email, email));
-                //message.To.Add(new MailboxAddress("hi", "jingsong0102@gmail.com"));
                 message.Subject = "Thank You For Shopping at Memory@YourFingerTips";
-                string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"EmailTemplate\template.txt");
+                string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"EmailTemplate\receiptTemplate.txt");
                 string text = File.ReadAllText(path);
+                text = text.Replace("{{OrderRef}}", newOrder.ReferenceNo);
                 text = text.Replace("{{receipt_id}}", newOrder.ReferenceNo);
                 text = text.Replace("{{date}}", newOrder.CreatedAt.ToLongDateString());
                 var table = "";
                 foreach (OrderItem item in newOrder.OrderItems)
                 {
-                    // i haven't test yet so it might not work
                     var itemProduct = await _context.Options
                         .Where(o => o.OptionId == item.OptionId)
                         .Include(o => o.Attributes)
                         .Include(o => o.Product)
                         .FirstOrDefaultAsync();
-
-                    table += "<tr class='eachItem'><td width='80%' class='purchase_item'>" + itemProduct.Product.ProductName + "</td><td class='align-right' width='20%' class='purchase_item'>{{amount}}</td></tr>";
+                    var itemAtr = " ";
+                    var c = 1;
                     // for attributes do a foreach (Attribute atr in itemProduct.Attributes), then atr.AttributeType and atr.AttributeValue
-                    
+                    foreach (Attribute atr in itemProduct.Attributes)
+                    {
+                        if (itemProduct.Attributes.Count > 1)
+                        {
+                            if (c == itemProduct.Attributes.Count)
+                                itemAtr += atr.AttributeValue + ")";
+                            else itemAtr += "(" + atr.AttributeValue + ",";
+                            c++;
+                        }
+                        else itemAtr += "(" + atr.AttributeValue + ")";
+
+                    }
+                    table += "<tr class='eachItem'><td width='80%' class='purchase_item'>" + "<img src='" + item.OrderImageUrl + "' alt='' width='80' height='80'>" + " " + itemProduct.Product.ProductName + itemAtr + "</td><td class='align-right' width='20%' class='purchase_item'>" + itemProduct.Product.Price.ToString("C", CultureInfo.CurrentCulture) + "</td></tr>";
                 }
                 text = text.Replace(
                 "<tr class='eachItem'><td width='40%' class='purchase_item'>{{description}}</td><td class='align-right' width='20%' class='purchase_item'>{{amount}}</td></tr>",
                     table);
                 text = text.Replace("{{total}}", newOrder.OrderTotal.ToString("C", CultureInfo.CurrentCulture));
 
-                File.WriteAllText(path, text);
+                if (newOrder.DeliveryTypeId == 3)
+                    text = text.Replace("{{ShippingAddress}}",
+                        "Self-Pickup");
+                if (newOrder.DeliveryTypeId == 1)
+                    text = text.Replace("{{ShippingAddress}}",
+                        newOrder.Address.UnitNo + "<br>"
+                        + newOrder.Address.AddressLine2
+                        + "<br>" + newOrder.Address.AddressLine1
+                        + "<br>" + newOrder.Address.PostalCode +
+                        "<br>" + newOrder.Address.State +
+                        "<br>" + newOrder.Address.Country);
+                if (newOrder.DeliveryTypeId == 2)
+                {
+                    if (newOrder.Address.AddressLine2 == "")
+                        text = text.Replace("{{ShippingAddress}}",
+                                newOrder.Address.UnitNo + "<br>" +
+                                newOrder.Address.AddressLine1 +
+                                "<br>" + newOrder.Address.PostalCode
+                                + "<br>" + newOrder.Address.State + "<br>"
+                                + newOrder.Address.Country);
+                    else text = text.Replace("{{ShippingAddress}}",
+                            newOrder.Address.UnitNo + "<br>" +
+                            newOrder.Address.AddressLine1 +
+                            "<br>" + newOrder.Address.AddressLine2
+                            + "<br>" + newOrder.Address.PostalCode
+                            + "<br>" + newOrder.Address.State + "<br>"
+                            + newOrder.Address.Country);
+                }
+                if (newOrder.Request != "")
+                    text = text.Replace("<!-- SR content -->", "<table class='purchase' width='100%' cellpadding='0' cellspacing='0'><tr><td><h3>Special Request</h3></td></tr><tr><td colspan='2'><tr width='20%' class='deliveryAdd'><td width='40%' class='purchase_item'>" + newOrder.Request + "</td><tr><td width='20%' class='purchase_footer' valign='middle'></td></tr></td></tr></table>");
+
                 message.Body = new TextPart("html")
                 {
                     Text = text
@@ -214,7 +256,7 @@ namespace FYP.Services
                     await client.DisconnectAsync(true);
                     client.Dispose();
                 }
-                
+
             }
             catch (Exception ex)
             {
