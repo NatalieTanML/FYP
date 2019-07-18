@@ -344,7 +344,7 @@ namespace FYP.APIs
             return Ok(new { guid = Guid.NewGuid().ToString("N").ToUpper() });
         }
 
-        [HttpGet("getOrderStatus")]
+        [HttpGet("status")]
         [AllowAnonymous]
         public async Task<IActionResult> GetOrderStatus()
         {
