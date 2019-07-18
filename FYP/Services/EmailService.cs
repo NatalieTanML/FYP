@@ -176,7 +176,7 @@ namespace FYP.Services
                         .Include(o => o.Attributes)
                         .Include(o => o.Product)
                         .FirstOrDefaultAsync();
-                    var itemAtr = "";
+                    var itemAtr = " ";
                     var c = 1;
                     // for attributes do a foreach (Attribute atr in itemProduct.Attributes), then atr.AttributeType and atr.AttributeValue
                     foreach (Attribute atr in itemProduct.Attributes)
@@ -191,7 +191,7 @@ namespace FYP.Services
                         else itemAtr += "(" + atr.AttributeValue + ")";
 
                     }
-                    table += "<tr class='eachItem'><td width='80%' class='purchase_item'>" + itemProduct.Product.ProductName + itemAtr + "</td><td class='align-right' width='20%' class='purchase_item'>" + itemProduct.Product.Price.ToString("C", CultureInfo.CurrentCulture) + "</td></tr>";
+                    table += "<tr class='eachItem'><td width='80%' class='purchase_item'>" + "<img src='" + item.OrderImageUrl + "' alt='' width='80' height='80'>" + " " + itemProduct.Product.ProductName + itemAtr + "</td><td class='align-right' width='20%' class='purchase_item'>" + itemProduct.Product.Price.ToString("C", CultureInfo.CurrentCulture) + "</td></tr>";
                 }
                 text = text.Replace(
                 "<tr class='eachItem'><td width='40%' class='purchase_item'>{{description}}</td><td class='align-right' width='20%' class='purchase_item'>{{amount}}</td></tr>",
