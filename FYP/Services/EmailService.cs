@@ -121,7 +121,7 @@ namespace FYP.Services
                     "?subject=" + "New enquiries about Memories@YourFingerTips"
                     + "&body=" + "Hi " + newEnquiries.name + "'>"
                     + newEnquiries.email + "</a>" +
-                    "<br>" +
+                    "<br>" + "<br>" +
                     "<i>This is a system generate email, please do not reply to this email.</i>" +
                     "<br>" +
                     "<i>Please click on customer email to start reply.</i>"
