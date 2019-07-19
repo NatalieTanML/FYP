@@ -29,12 +29,15 @@ namespace FYP.Services
     {
         private ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
+        private readonly IEmailService _emailService;
 
         public UserService(ApplicationDbContext context, 
-            IOptions<AppSettings> appSettings)
+            IOptions<AppSettings> appSettings,
+            IEmailService emailService)
         {
             _context = context;
             _appSettings = appSettings.Value;
+            _emailService = emailService;
         }
 
         public async Task<IEnumerable<User>> GetAll()
@@ -86,7 +89,7 @@ namespace FYP.Services
             if (await _context.Users.AnyAsync(u => u.Email == user.Email))
                 throw new AppException("Email '" + user.Email + "' is already in use.");
 
-            user = await GenerateNewPasswordAndEmail(user, "Registration Successful!");
+            user = await _emailService.GenerateNewPasswordAndEmail(user, "Registration Successful!");
 
             // Update user details
             user.CreatedAt = DateTime.Now;
@@ -176,7 +179,7 @@ namespace FYP.Services
         public async Task<User> ChangePassword(int id)
         {
             var user = await _context.Users.FindAsync(id);
-            user = await GenerateNewPasswordAndEmail(user, "Reset Password");
+            user = await _emailService.GenerateNewPasswordAndEmail(user, "Reset Password");
 
             // Update user details
             user.UpdatedAt = DateTime.Now;
@@ -219,58 +222,7 @@ namespace FYP.Services
                     if (computedHash[i] != inStoredHash[i]) return false;
                 }
             }
-
             return true;
-        }
-
-        private async Task<User> GenerateNewPasswordAndEmail(User user, string messageSubject)
-        {
-            //Generate random string for password.
-            //interesting article https://stackoverflow.com/questions/37170388/create-a-cryptographically-secure-random-guid-in-net
-            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
-
-            var onebyte = new byte[16];
-            rng.GetBytes(onebyte);
-            string password = new Guid(onebyte).ToString("N");
-            password = password.Substring(0, 11);
-
-            // Create password hash & salt
-            byte[] passwordHash, passwordSalt;
-            CreatePasswordHash(password, out passwordHash, out passwordSalt);
-            user.PasswordHash = passwordHash;
-            user.PasswordSalt = passwordSalt;
-
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("WY", "weiyang35@hotmail.com"));
-            message.To.Add(new MailboxAddress("WY", user.Email));
-            message.Subject = messageSubject;
-            message.Body = new TextPart("plain")
-            {
-                Text = "Your New Password: " + password
-            };
-
-            using (var client = new MailKit.Net.Smtp.SmtpClient())
-            {
-                //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
-                //client.AuthenticationMechanisms.Remove("XOAUTH2");
-                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-
-                //Google
-                await client.ConnectAsync("smtp.office365.com", 587, false);
-                await client.AuthenticateAsync("weiyang35@hotmail.com", "S9925187E");
-
-                // Start of provider specific settings
-                //Yhoo
-                // client.Connect("smtp.mail.yahoo.com", 587, false);
-                // client.Authenticate("yahoo", "password");
-
-                // End of provider specific settings
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
-                client.Dispose();
-            }
-
-            return user;
         }
     }
 }

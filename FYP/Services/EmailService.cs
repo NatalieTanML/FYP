@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -19,7 +20,8 @@ namespace FYP.Services
 {
     public interface IEmailService
     {
-        Task NotifyLowStock();
+        Task<User> GenerateNewPasswordAndEmail(User user, string messageSubject);
+        Task NotifyLowStock(List<Option> options);
         Task CreateMessage(Enquiries enquiries);
         Task SendReceipt(Order newOrder);
     }
@@ -29,43 +31,45 @@ namespace FYP.Services
         private ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
         private readonly IConfiguration _configuration;
-        private readonly IUserService _userService;
 
         public EmailService(ApplicationDbContext context,
             IOptions<AppSettings> appSettings,
-            IConfiguration configuration,
-            IUserService userService)
+            IConfiguration configuration)
         {
             _context = context;
             _appSettings = appSettings.Value;
             _configuration = configuration;
-            _userService = userService;
         }
 
-        public async Task NotifyLowStock()
+        public async Task<User> GenerateNewPasswordAndEmail(User user, string messageSubject)
         {
-            var users = await _userService.GetAll();
-
             var builder = new ConfigurationBuilder().SetBasePath
-                (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
+                    (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
             var configuration = builder.Build();
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("FYP", configuration["Email:Account"]));
-            message.To.Add(new MailboxAddress("FYP", configuration["Email:Receiver"]));
-            //foreach (string emails in emailAccounts)
-            //{
-            //     message.To.Add(new MailboxAddress("FYP", emails));
-            // }
-            foreach (User user in users)
-            {
-                message.To.Add(new MailboxAddress("FYP", user.Email));
+            //Generate random string for password.
+            //interesting article https://stackoverflow.com/questions/37170388/create-a-cryptographically-secure-random-guid-in-net
+            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
 
-            }
-            message.Subject = "Test";
-            message.Body = new TextPart("plain")
+            var onebyte = new byte[16];
+            rng.GetBytes(onebyte);
+            string password = new Guid(onebyte).ToString("N");
+            password = password.Substring(0, 11);
+
+            // Create password hash & salt
+            byte[] passwordHash, passwordSalt;
+            CreatePasswordHash(password, out passwordHash, out passwordSalt);
+            user.PasswordHash = passwordHash;
+            user.PasswordSalt = passwordSalt;
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("Memories @ Your Fingertips", configuration["Email:Account"]));
+            message.To.Add(new MailboxAddress(user.Name, user.Email));
+            message.Subject = messageSubject;
+            message.Body = new TextPart("html")
             {
-                Text = "test yooo"
+                Text = "Your new password: " + password
+                    + "<br><br><i>This is a system-generated email. Please do not reply to this email.</i>"
             };
 
             using (var client = new MailKit.Net.Smtp.SmtpClient())
@@ -88,6 +92,73 @@ namespace FYP.Services
                 await client.DisconnectAsync(true);
                 client.Dispose();
             }
+            return user;
+        }
+
+        public async Task NotifyLowStock(List<Option> options)
+        {
+            try
+            {
+                // get all store users
+                var users = await _context.Users
+                    .Where(u => u.RoleId == 1)
+                    .ToListAsync();
+
+                if (users == null)
+                    throw new AppException("Unable to retrieve users. Please try again.");
+
+                if (options == null)
+                    throw new AppException("Option/SKU does not exist.");
+
+                var builder = new ConfigurationBuilder().SetBasePath
+                    (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
+                var configuration = builder.Build();
+
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress("Memories @ Your FingerTips", configuration["Email:Account"]));
+                message.Subject = "Low Stock Notification";
+                foreach (User user in users)
+                {
+                    message.To.Add(new MailboxAddress(user.Name, user.Email));
+                }
+                string SKUs = "";
+                foreach (Option o in options)
+                {
+                    SKUs += "<b>'" + o.SKUNumber + "'</b> ";
+                }
+
+                message.Body = new TextPart("html")
+                {
+                    Text = "Stock count for " + SKUs + "is low." 
+                        + "<br>Please restock the inventory for the item(s), and update the quantity in Resource Management."
+                        + "<br><i>This is a system-generated email. Please do not reply to this email.</i>"
+                };
+
+                using (var client = new MailKit.Net.Smtp.SmtpClient())
+                {
+                    //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
+                    //client.AuthenticationMechanisms.Remove("XOAUTH2");
+                    client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+
+                    //Google
+                    await client.ConnectAsync("smtp.gmail.com", 587, false);
+                    await client.AuthenticateAsync(configuration["Email:Account"], configuration["Email:Password"]);
+
+                    // Start of provider specific settings
+                    //Yhoo
+                    // client.Connect("smtp.mail.yahoo.com", 587, false);
+                    // client.Authenticate("yahoo", "password");
+
+                    // End of provider specific settings
+                    await client.SendAsync(message);
+                    await client.DisconnectAsync(true);
+                    client.Dispose();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new AppException(ex.Message);
+            }
         }
 
         public async Task CreateMessage(Enquiries enquiries)
@@ -104,13 +175,13 @@ namespace FYP.Services
             var configuration = builder.Build();
 
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("Memories@YourFingerTips", configuration["Email:Account"]));
-            message.To.Add(new MailboxAddress("Admin_Memories@YourFingerTips", configuration["Email:Receiver"]));
-            message.Subject = "Customer Message From Memories@YourFingerTips";
+            message.From.Add(new MailboxAddress("Memories @ Your Fingertips", configuration["Email:Account"]));
+            message.To.Add(new MailboxAddress("Memories @ Your FingerTips", configuration["Email:Receiver"]));
+            message.Subject = "Message from Customer (Memories @ Your Fingertips)";
             message.Body = new TextPart("html")
             {
                 Text =
-                    "Hi," +
+                    "New message received from a customer: " +
                     "<br>" + "<br>" +
                     newEnquiries.message +
                     "<br>" + "<br>" +
@@ -118,13 +189,13 @@ namespace FYP.Services
                     "<br>" +
                     "<i>Customer Email: </i>" +
                      "<a href = 'mailto:" + newEnquiries.email +
-                    "?subject=" + "New enquiries about Memories@YourFingerTips"
+                    "?subject=" + "Reply from Memories @ Your Fingertips"
                     + "&body=" + "Hi " + newEnquiries.name + "'>"
                     + newEnquiries.email + "</a>" +
                     "<br>" + "<br>" +
-                    "<i>This is a system generate email, please do not reply to this email.</i>" +
+                    "<i>This is a system generated email, please do not reply to this email.</i>" +
                     "<br>" +
-                    "<i>Please click on customer email to start reply.</i>"
+                    "<i>Please click on customer email to reply.</i>"
             };
 
             using (var client = new MailKit.Net.Smtp.SmtpClient())
@@ -160,9 +231,9 @@ namespace FYP.Services
                 var email = DecryptString(newOrder.Email, configuration["Encryption:Key"]);
 
                 var message = new MimeMessage();
-                message.From.Add(new MailboxAddress("Memory@YourFingerTips", configuration["Email:Account"]));
+                message.From.Add(new MailboxAddress("Memories @ Your FingerTips", configuration["Email:Account"]));
                 message.To.Add(new MailboxAddress(email, email));
-                message.Subject = "Thank You For Shopping at Memory@YourFingerTips";
+                message.Subject = "Your order receipt for 'Memories @ Your Fingertips'";
                 string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"EmailTemplate\receiptTemplate.txt");
                 string text = File.ReadAllText(path);
                 text = text.Replace("{{OrderRef}}", newOrder.ReferenceNo);
@@ -191,7 +262,11 @@ namespace FYP.Services
                         else itemAtr += "(" + atr.AttributeValue + ")";
 
                     }
-                    table += "<tr class='eachItem'><td width='80%' class='purchase_item'>" + "<img src='" + item.OrderImageUrl + "' alt='' width='80' height='80'>" + " " + itemProduct.Product.ProductName + itemAtr + "</td><td class='align-right' width='20%' class='purchase_item'>" + itemProduct.Product.Price.ToString("C", CultureInfo.CurrentCulture) + "</td></tr>";
+                    table += "<tr class='eachItem'><td width='80%' class='purchase_item'>" 
+                        + "<img src='" + item.OrderImageUrl + "' alt='' width='80' height='80'>" 
+                        + " " + itemProduct.Product.ProductName + itemAtr 
+                        + "</td><td class='align-right' width='20%' class='purchase_item'>" 
+                        + itemProduct.Product.Price.ToString("C", CultureInfo.CurrentCulture) + "</td></tr>";
                 }
                 text = text.Replace(
                 "<tr class='eachItem'><td width='40%' class='purchase_item'>{{description}}</td><td class='align-right' width='20%' class='purchase_item'>{{amount}}</td></tr>",
@@ -227,17 +302,19 @@ namespace FYP.Services
                             + newOrder.Address.Country);
                 }
                 if (newOrder.Request != "")
-                    text = text.Replace("<!-- SR content -->", "<table class='purchase' width='100%' cellpadding='0' cellspacing='0'><tr><td><h3>Special Request</h3></td></tr><tr><td colspan='2'><tr width='20%' class='deliveryAdd'><td width='40%' class='purchase_item'>" + newOrder.Request + "</td><tr><td width='20%' class='purchase_footer' valign='middle'></td></tr></td></tr></table>");
+                    text = text.Replace("<!-- SR content -->", 
+                        "<table class='purchase' width='100%' cellpadding='0' cellspacing='0'><tr><td>" + 
+                        "<h3>Special Request</h3></td></tr><tr><td colspan='2'><tr width='20%' class='deliveryAdd'>" + 
+                        "<td width='40%' class='purchase_item'>" + newOrder.Request + 
+                        "</td><tr><td width='20%' class='purchase_footer' valign='middle'></td></tr></td></tr></table>");
 
                 message.Body = new TextPart("html")
                 {
                     Text = text
                 };
 
-
                 using (var client = new MailKit.Net.Smtp.SmtpClient())
                 {
-
                     //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
                     //client.AuthenticationMechanisms.Remove("XOAUTH2");
                     client.ServerCertificateValidationCallback = (s, c, h, e) => true;
@@ -256,7 +333,6 @@ namespace FYP.Services
                     await client.DisconnectAsync(true);
                     client.Dispose();
                 }
-
             }
             catch (Exception ex)
             {
@@ -268,7 +344,21 @@ namespace FYP.Services
 
         }
 
-        public static string DecryptString(byte[] cipherText, string keyString)
+        // private helper methods
+        private static void CreatePasswordHash(string inPassword, out byte[] inPasswordHash, out byte[] inPasswordSalt)
+        {
+            if (inPassword == null) throw new ArgumentNullException("password");
+            if (string.IsNullOrWhiteSpace(inPassword)) throw new ArgumentException("Value cannot be empty or whitespace only string.", "password");
+            //The password is hashed with a new random salt.
+            //https://crackstation.net/hashing-security.htm
+            using (var hmac = new HMACSHA512())
+            {
+                inPasswordSalt = hmac.Key;
+                inPasswordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(inPassword));
+            }
+        }
+
+        private static string DecryptString(byte[] cipherText, string keyString)
         {
             var fullCipher = cipherText;
 

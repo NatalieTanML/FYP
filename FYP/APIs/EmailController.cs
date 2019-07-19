@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -17,7 +18,6 @@ namespace FYP.APIs
     {
         private IEmailService _emailService;
         private readonly AppSettings _appSettings;
-        //private ArrayList emailAccounts = new ArrayList();
 
         public EmailController(
             IEmailService emailService,
@@ -28,14 +28,14 @@ namespace FYP.APIs
         }
 
         [HttpPost("stock")]
-        public async Task<IActionResult> NotifyLowStock()
+        public async Task<IActionResult> NotifyLowStock([FromBody] List<Option> option)
         {
             try
             {
-                await _emailService.NotifyLowStock();
+                await _emailService.NotifyLowStock(option);
                 return Ok(new
                 {
-                    message = "Notified all users of low stock"
+                    message = "Notified all users of low stock."
                 });
             }
             catch (Exception ex)
@@ -47,7 +47,6 @@ namespace FYP.APIs
         [HttpPost("message")]
         public async Task<IActionResult> CreateMessage([FromBody]Enquiries enquiries)
         {
-
             try
             {
                 await _emailService.CreateMessage(enquiries);

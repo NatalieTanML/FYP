@@ -46,6 +46,7 @@ namespace FYP.Services
         private readonly IOrderHub _orderHub;
         private readonly IS3Service _s3Service;
         private readonly IProductService _productService;
+        private readonly IEmailService _emailService;
 
         private readonly string encryptionKey;
         
@@ -54,7 +55,8 @@ namespace FYP.Services
             IConfiguration configuration,
             IOrderHub orderHub, 
             IS3Service s3Service,
-            IProductService productService)
+            IProductService productService,
+            IEmailService emailService)
         {
             _context = context;
             _appSettings = appSettings.Value;
@@ -62,6 +64,7 @@ namespace FYP.Services
             _orderHub = orderHub;
             _s3Service = s3Service;
             _productService = productService;
+            _emailService = emailService;
 
             // get encryption key for email
             encryptionKey = _configuration.GetValue<string>("Encryption:Key");
@@ -149,6 +152,8 @@ namespace FYP.Services
         {
             try
             {
+                List<Option> lowStockItems = new List<Option>();
+                List<string> lowStockSKUs = new List<string>();
                 foreach (OrderItem orderItem in order.OrderItems)
                 {
                     // update the stock count
@@ -159,13 +164,16 @@ namespace FYP.Services
                     // do stock check
                     if (currentOption.CurrentQuantity < currentOption.MinimumQuantity)
                     {
-                        // TODO: insert method here to call the email service for low stock
-
-
-                        // call the hub to notify the admins
-                        await _orderHub.NotifyLowStock(currentOption);
+                        if (!lowStockItems.Contains(currentOption))
+                        {
+                            lowStockItems.Add(currentOption);
+                            lowStockSKUs.Add(currentOption.SKUNumber);
+                        }
                     }
                 }
+                // notify of low stock via email + signalr
+                await _emailService.NotifyLowStock(lowStockItems);
+                await _orderHub.NotifyLowStock(lowStockSKUs);
 
                 List<string> imgKeys = new List<string>();
                 foreach (OrderItem item in order.OrderItems)
