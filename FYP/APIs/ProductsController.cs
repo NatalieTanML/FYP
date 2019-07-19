@@ -105,7 +105,7 @@ namespace FYP.APIs
 
                 foreach (Product product in products)
                 {
-                    var effectiveDiscountPrice = RetrieveEffectiveDiscount(product);
+                    var effectiveDiscountPrice = _productService.RetrieveEffectiveDiscount(product);
 
                     productList.Add(new
                     {
@@ -204,6 +204,10 @@ namespace FYP.APIs
                         })
                 });
             }
+            catch (NullReferenceException)
+            {
+                return BadRequest(new { message = "Product does not exist." });
+            }
             catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
@@ -217,7 +221,7 @@ namespace FYP.APIs
             try
             {
                 var product = await _productService.GetById(id);
-                var effectiveDiscountPrice = RetrieveEffectiveDiscount(product);
+                var effectiveDiscountPrice = _productService.RetrieveEffectiveDiscount(product);
 
                 return Ok(new
                 {
@@ -258,51 +262,7 @@ namespace FYP.APIs
             }
         }
 
-        public List<object> RetrieveEffectiveDiscount(Product product)
-        {
-            DateTime todayDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
-            List<object> effectiveDiscountPrice = new List<object>();
-            var basePrice = product.Price;
-
-            // if discount is percentage, add another column for the discount value
-            foreach (var productDiscount in product.DiscountPrices)
-            {
-                // Check if today's date is within discount start date and end date
-                if (todayDate >= productDiscount.EffectiveStartDate &&
-                    todayDate < productDiscount.EffectiveEndDate)
-                {
-                    if (productDiscount.IsPercentage)
-                    {
-                        // Calculate the discounted price based on discount percentage
-                        var discountPrice =
-                            Math.Round(basePrice - (basePrice * (productDiscount.DiscountValue) / 100), 2);
-
-                        effectiveDiscountPrice.Add(new
-                        {
-                            productDiscount.DiscountPriceId,
-                            productDiscount.DiscountValue,
-                            productDiscount.IsPercentage,
-                            discountPrice
-                        });
-                    }
-                    else
-                    {
-                        // Calculate the discount percentage based on the discount price
-                        var discountPercentage =
-                            Math.Ceiling((basePrice - productDiscount.DiscountValue) / basePrice * 100);
-
-                        effectiveDiscountPrice.Add(new
-                        {
-                            productDiscount.DiscountPriceId,
-                            productDiscount.DiscountValue,
-                            productDiscount.IsPercentage,
-                            discountPercentage
-                        });
-                    }
-                }
-            }
-            return effectiveDiscountPrice;
-        }
+        
 
         [HttpPost]
         [AllowAnonymous]

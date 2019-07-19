@@ -31,6 +31,7 @@ namespace FYP.Services
         Task Update(Product productParam);
         Task UpdateStock(int id, int stockUpdate);
         Task Delete(int id);
+        List<object> RetrieveEffectiveDiscount(Product product);
     }
 
     public class ProductService : IProductService
@@ -454,6 +455,55 @@ namespace FYP.Services
                 }
             }
         }
-        
+
+        public List<object> RetrieveEffectiveDiscount(Product product)
+        {
+            DateTime todayDate = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
+            List<object> effectiveDiscountPrice = new List<object>();
+            var basePrice = product.Price;
+
+            // if discount is percentage, add another column for the discount value
+            foreach (var productDiscount in product.DiscountPrices)
+            {
+                // Check if today's date is within discount start date and end date
+                // if there is no end date, check to see if discount is currently happening
+                if ((todayDate >= productDiscount.EffectiveStartDate &&
+                    todayDate < productDiscount.EffectiveEndDate) || 
+                    (todayDate >= productDiscount.EffectiveStartDate &&
+                    productDiscount.EffectiveEndDate == null))
+                {
+                    if (productDiscount.IsPercentage)
+                    {
+                        // Calculate the discounted price based on discount percentage
+                        var discountPrice =
+                            Math.Round(basePrice - (basePrice * (productDiscount.DiscountValue) / 100), 2);
+
+                        effectiveDiscountPrice.Add(new
+                        {
+                            productDiscount.DiscountPriceId,
+                            productDiscount.DiscountValue,
+                            productDiscount.IsPercentage,
+                            discountPrice
+                        });
+                    }
+                    else
+                    {
+                        // Calculate the discount percentage based on the discount price
+                        var discountPercentage =
+                            Math.Ceiling((basePrice - productDiscount.DiscountValue) / basePrice * 100);
+
+                        effectiveDiscountPrice.Add(new
+                        {
+                            productDiscount.DiscountPriceId,
+                            productDiscount.DiscountValue,
+                            productDiscount.IsPercentage,
+                            discountPercentage
+                        });
+                    }
+                }
+            }
+            return effectiveDiscountPrice;
+        }
+
     }
 }
