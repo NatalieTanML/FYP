@@ -218,7 +218,7 @@ namespace FYP.Services
                 product.ImageWidth = double.Parse(productParam.ImageWidth.ToString());
                 product.ImageHeight = double.Parse(productParam.ImageHeight.ToString());
                 product.EffectiveStartDate = DateTime.ParseExact(productParam.EffectiveStartDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture);
-                product.EffectiveEndDate = string.IsNullOrWhiteSpace(productParam.EffectiveEndDate.ToString()) ? (DateTime?)null : DateTime.ParseExact(product.EffectiveEndDate?.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture);
+                product.EffectiveEndDate = string.IsNullOrWhiteSpace(productParam.EffectiveEndDate.ToString()) ? (DateTime?)null : DateTime.ParseExact(productParam.EffectiveEndDate?.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture);
                 product.UpdatedAt = DateTime.Now;
                 product.UpdatedById = productParam.UpdatedById;
                 _context.Products.Update(product);
@@ -234,7 +234,7 @@ namespace FYP.Services
                             DiscountPriceId = price.DiscountPriceId,
                             ProductId = price.ProductId,
                             EffectiveStartDate = DateTime.ParseExact(price.EffectiveStartDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
-                            EffectiveEndDate = string.IsNullOrWhiteSpace(product.EffectiveEndDate.ToString()) ? (DateTime?)null : DateTime.ParseExact(price.EffectiveEndDate?.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
+                            EffectiveEndDate = string.IsNullOrWhiteSpace(price.EffectiveEndDate.ToString()) ? (DateTime?)null : DateTime.ParseExact(price.EffectiveEndDate?.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
                             DiscountValue = decimal.Parse(price.DiscountValue.ToString()),
                             IsPercentage = bool.Parse(price.IsPercentage.ToString())
                         });
