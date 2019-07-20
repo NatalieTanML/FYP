@@ -326,6 +326,7 @@ namespace FYP.Services
                     {
                         DiscountPrice existingPrice = product.DiscountPrices
                             .Where(d => d.DiscountPriceId == dpModel.DiscountPriceId)
+                            .Where(d => d.DiscountPriceId != 0)
                             .SingleOrDefault();
 
                         if (existingPrice != null)
@@ -345,6 +346,7 @@ namespace FYP.Services
                 {
                     Option existingOption = product.Options
                         .Where(o => o.OptionId == opModel.OptionId)
+                        .Where(o => o.OptionId != 0)
                         .SingleOrDefault();
 
                     if (existingOption != null)
