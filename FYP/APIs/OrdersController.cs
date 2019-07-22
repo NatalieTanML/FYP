@@ -361,6 +361,14 @@ namespace FYP.APIs
             return new JsonResult(statusList);
         }
 
+        [HttpGet("deliverytypes")]
+        public async Task<IActionResult> GetAllDeliveryTypes()
+        {
+            var deliveryTypes = await _orderService.GetAllDeliveryTypes();
+
+            return new JsonResult(deliveryTypes);
+        }
+
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateOrder([FromBody] Order order)
         {
@@ -420,14 +428,6 @@ namespace FYP.APIs
                 // return error message 
                 return BadRequest(new { message = ex.Message });
             }
-        }
-
-        [HttpGet("deliverytypes")]
-        public async Task<IActionResult> GetAllDeliveryTypes()
-        {
-            var deliveryTypes = await _orderService.GetAllDeliveryTypes();
-          
-            return new JsonResult(deliveryTypes);
         }
 
         [HttpPut("recipient")]

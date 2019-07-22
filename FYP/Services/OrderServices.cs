@@ -172,8 +172,11 @@ namespace FYP.Services
                     }
                 }
                 // notify of low stock via email + signalr
-                await _emailService.NotifyLowStock(lowStockItems);
-                await _orderHub.NotifyLowStock(lowStockSKUs);
+                if (lowStockItems.Count > 0)
+                {
+                    await _emailService.NotifyLowStock(lowStockItems);
+                    await _orderHub.NotifyLowStock(lowStockSKUs);
+                }
 
                 List<string> imgKeys = new List<string>();
                 foreach (OrderItem item in order.OrderItems)

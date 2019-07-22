@@ -28,11 +28,11 @@ namespace FYP.APIs
         }
 
         [HttpPost("stock")]
-        public async Task<IActionResult> NotifyLowStock([FromBody] List<Option> option)
+        public async Task<IActionResult> NotifyLowStock([FromBody] List<Option> options)
         {
             try
             {
-                await _emailService.NotifyLowStock(option);
+                await _emailService.NotifyLowStock(options);
                 return Ok(new
                 {
                     message = "Notified all users of low stock."

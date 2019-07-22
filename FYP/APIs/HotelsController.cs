@@ -63,6 +63,10 @@ namespace FYP.APIs
                     hotelPostalCode = hotel.HotelPostalCode
                 });
             }
+            catch (NullReferenceException)
+            {
+                return BadRequest(new { message = "Hotel does not exist." });
+            }
             catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
