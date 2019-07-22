@@ -129,7 +129,7 @@ namespace FYP.Services
 
                 message.Body = new TextPart("html")
                 {
-                    Text = "Stock count for " + SKUs + "is low." 
+                    Text = "Stock count for " + SKUs + "is low."
                         + "<br>Please restock the inventory for the item(s), and update the quantity in Resource Management."
                         + "<br><i>This is a system-generated email. Please do not reply to this email.</i>"
                 };
@@ -262,11 +262,11 @@ namespace FYP.Services
                         else itemAtr += "(" + atr.AttributeValue + ")";
 
                     }
-                    table += "<tr class='eachItem'><td width='80%' class='purchase_item'>" 
-                        + "<img src='" + item.OrderImageUrl + "' alt='' width='80' height='80'>" 
-                        + " " + itemProduct.Product.ProductName + itemAtr 
-                        + "</td><td class='align-right' width='20%' class='purchase_item'>" 
-                        + itemProduct.Product.Price.ToString("C", CultureInfo.CurrentCulture) + "</td></tr>";
+                    table += "<tr class='eachItem'><td width='80%' class='purchase_item'>"
+                        + "<img src='" + item.OrderImageUrl + "' alt='' width='80' height='80'>"
+                        + " " + itemProduct.Product.ProductName + itemAtr
+                        + "</td><td class='align-right' width='20%' class='purchase_item'>"
+                        + itemProduct.Product.Price.ToString("C", CultureInfo.CurrentCulture) + " x " + item.Quantity + "</td></tr>";
                 }
                 text = text.Replace(
                 "<tr class='eachItem'><td width='40%' class='purchase_item'>{{description}}</td><td class='align-right' width='20%' class='purchase_item'>{{amount}}</td></tr>",
@@ -302,10 +302,10 @@ namespace FYP.Services
                             + newOrder.Address.Country);
                 }
                 if (newOrder.Request != "")
-                    text = text.Replace("<!-- SR content -->", 
-                        "<table class='purchase' width='100%' cellpadding='0' cellspacing='0'><tr><td>" + 
-                        "<h3>Special Request</h3></td></tr><tr><td colspan='2'><tr width='20%' class='deliveryAdd'>" + 
-                        "<td width='40%' class='purchase_item'>" + newOrder.Request + 
+                    text = text.Replace("<!-- SR content -->",
+                        "<table class='purchase' width='100%' cellpadding='0' cellspacing='0'><tr><td>" +
+                        "<h3>Special Request</h3></td></tr><tr><td colspan='2'><tr width='20%' class='deliveryAdd'>" +
+                        "<td width='40%' class='purchase_item'>" + newOrder.Request +
                         "</td><tr><td width='20%' class='purchase_footer' valign='middle'></td></tr></td></tr></table>");
 
                 message.Body = new TextPart("html")
