@@ -22,8 +22,7 @@ namespace FYP.APIs
         private readonly AppSettings _appSettings;
 
         public PayPalController(IPayPalService payPalService, 
-            IOptions<AppSettings> appSettings, 
-            IOrderService ordersService)
+            IOptions<AppSettings> appSettings)
         {
             _payPalService = payPalService;
             _appSettings = appSettings.Value;
