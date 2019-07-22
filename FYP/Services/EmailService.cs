@@ -31,14 +31,17 @@ namespace FYP.Services
         private ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
         private readonly IConfiguration _configuration;
+        private readonly IProductService _productService;
 
         public EmailService(ApplicationDbContext context,
             IOptions<AppSettings> appSettings,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IProductService productService)
         {
             _context = context;
             _appSettings = appSettings.Value;
             _configuration = configuration;
+            _productService = productService;
         }
 
         public async Task<User> GenerateNewPasswordAndEmail(User user, string messageSubject)
@@ -276,11 +279,32 @@ namespace FYP.Services
                         else itemAtr += "(" + atr.AttributeValue + ")";
 
                     }
+                    var product = await _productService.GetById(itemProduct.Product.ProductId);
+                    var effectiveDiscountPrice = _productService.RetrieveEffectiveDiscount(product);
+                    decimal itemPrice;
+                    if (effectiveDiscountPrice.Count != 0)
+                    {
+                        var discountPrice = effectiveDiscountPrice.ElementAt(0).ToString();
+                        if (discountPrice.Contains("True"))
+                        {
+                            int pFrom = discountPrice.IndexOf("discountPrice = ") + "discountPrice = ".Length;
+                            int pTo = discountPrice.LastIndexOf(" }");
+                            itemPrice = Decimal.Parse(discountPrice.Substring(pFrom, pTo - pFrom));
+                        }
+                        else
+                        {
+                            int pFrom = discountPrice.IndexOf("discountValue = ") + "discountValue = ".Length;
+                            int pTo = discountPrice.LastIndexOf(", IsPercentage");
+                            itemPrice = Decimal.Parse(discountPrice.Substring(pFrom, pTo - pFrom));
+                        }
+                    }
+                    else itemPrice = itemProduct.Product.Price;
                     table += "<tr class='eachItem'><td width='80%' class='purchase_item'>"
-                        + "<img src='" + item.OrderImageUrl + "' alt='' width='80' height='80'>"
-                        + " " + itemProduct.Product.ProductName + itemAtr
-                        + "</td><td class='align-right' width='20%' class='purchase_item'>"
-                        + itemProduct.Product.Price.ToString("C", CultureInfo.CurrentCulture) + " x " + item.Quantity + "</td></tr>";
+                    + "<img src='" + item.OrderImageUrl + "' alt='' width='80' height='80'>"
+                    + " " + itemProduct.Product.ProductName + itemAtr
+                    + "</td><td class='align-right' width='20%' class='purchase_item'>"
+                    + itemPrice.ToString("C", CultureInfo.CurrentCulture) + " x " + item.Quantity + "</td></tr>";
+
                 }
                 text = text.Replace(
                 "<tr class='eachItem'><td width='40%' class='purchase_item'>{{description}}</td><td class='align-right' width='20%' class='purchase_item'>{{amount}}</td></tr>",
