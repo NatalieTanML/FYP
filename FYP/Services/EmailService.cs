@@ -43,54 +43,61 @@ namespace FYP.Services
 
         public async Task<User> GenerateNewPasswordAndEmail(User user, string messageSubject)
         {
-            var builder = new ConfigurationBuilder().SetBasePath
+            try
+            {
+                var builder = new ConfigurationBuilder().SetBasePath
                     (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
-            var configuration = builder.Build();
+                var configuration = builder.Build();
 
-            //Generate random string for password.
-            //interesting article https://stackoverflow.com/questions/37170388/create-a-cryptographically-secure-random-guid-in-net
-            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+                //Generate random string for password.
+                //interesting article https://stackoverflow.com/questions/37170388/create-a-cryptographically-secure-random-guid-in-net
+                RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
 
-            var onebyte = new byte[16];
-            rng.GetBytes(onebyte);
-            string password = new Guid(onebyte).ToString("N");
-            password = password.Substring(0, 11);
+                var onebyte = new byte[16];
+                rng.GetBytes(onebyte);
+                string password = new Guid(onebyte).ToString("N");
+                password = password.Substring(0, 11);
 
-            // Create password hash & salt
-            byte[] passwordHash, passwordSalt;
-            CreatePasswordHash(password, out passwordHash, out passwordSalt);
-            user.PasswordHash = passwordHash;
-            user.PasswordSalt = passwordSalt;
+                // Create password hash & salt
+                byte[] passwordHash, passwordSalt;
+                CreatePasswordHash(password, out passwordHash, out passwordSalt);
+                user.PasswordHash = passwordHash;
+                user.PasswordSalt = passwordSalt;
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("Memories @ Your Fingertips", configuration["Email:Account"]));
-            message.To.Add(new MailboxAddress(user.Name, user.Email));
-            message.Subject = messageSubject;
-            message.Body = new TextPart("html")
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress("Memories @ Your Fingertips", configuration["Email:Account"]));
+                message.To.Add(new MailboxAddress(user.Name, user.Email));
+                message.Subject = messageSubject;
+                message.Body = new TextPart("html")
+                {
+                    Text = "Your new password: " + password
+                        + "<br><br><i>This is a system-generated email. Please do not reply to this email.</i>"
+                };
+
+                using (var client = new MailKit.Net.Smtp.SmtpClient())
+                {
+                    //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
+                    //client.AuthenticationMechanisms.Remove("XOAUTH2");
+                    client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+
+                    //Google
+                    await client.ConnectAsync("smtp.gmail.com", 587, false);
+                    await client.AuthenticateAsync(configuration["Email:Account"], configuration["Email:Password"]);
+
+                    // Start of provider specific settings
+                    //Yhoo
+                    // client.Connect("smtp.mail.yahoo.com", 587, false);
+                    // client.Authenticate("yahoo", "password");
+
+                    // End of provider specific settings
+                    await client.SendAsync(message);
+                    await client.DisconnectAsync(true);
+                    client.Dispose();
+                }
+            }
+            catch (Exception ex)
             {
-                Text = "Your new password: " + password
-                    + "<br><br><i>This is a system-generated email. Please do not reply to this email.</i>"
-            };
-
-            using (var client = new MailKit.Net.Smtp.SmtpClient())
-            {
-                //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
-                //client.AuthenticationMechanisms.Remove("XOAUTH2");
-                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-
-                //Google
-                await client.ConnectAsync("smtp.gmail.com", 587, false);
-                await client.AuthenticateAsync(configuration["Email:Account"], configuration["Email:Password"]);
-
-                // Start of provider specific settings
-                //Yhoo
-                // client.Connect("smtp.mail.yahoo.com", 587, false);
-                // client.Authenticate("yahoo", "password");
-
-                // End of provider specific settings
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
-                client.Dispose();
+                throw new AppException(ex.Message);
             }
             return user;
         }
@@ -108,7 +115,7 @@ namespace FYP.Services
                     throw new AppException("Unable to retrieve users. Please try again.");
 
                 if (options == null)
-                    throw new AppException("Option/SKU does not exist.");
+                    throw new AppException("Options/SKUs do not exist.");
 
                 var builder = new ConfigurationBuilder().SetBasePath
                     (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
@@ -129,7 +136,7 @@ namespace FYP.Services
 
                 message.Body = new TextPart("html")
                 {
-                    Text = "Stock count for " + SKUs + "is low." 
+                    Text = "Stock count for " + SKUs + "is low."
                         + "<br>Please restock the inventory for the item(s), and update the quantity in Resource Management."
                         + "<br><i>This is a system-generated email. Please do not reply to this email.</i>"
                 };
@@ -163,60 +170,67 @@ namespace FYP.Services
 
         public async Task CreateMessage(Enquiries enquiries)
         {
-            Enquiries newEnquiries = new Enquiries()
+            try
             {
-                name = enquiries.name,
-                email = enquiries.email,
-                message = enquiries.message
-            };
+                Enquiries newEnquiries = new Enquiries()
+                {
+                    name = enquiries.name,
+                    email = enquiries.email,
+                    message = enquiries.message
+                };
 
-            var builder = new ConfigurationBuilder().SetBasePath
-                (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
-            var configuration = builder.Build();
+                var builder = new ConfigurationBuilder().SetBasePath
+                    (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
+                var configuration = builder.Build();
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("Memories @ Your Fingertips", configuration["Email:Account"]));
-            message.To.Add(new MailboxAddress("Memories @ Your FingerTips", configuration["Email:Receiver"]));
-            message.Subject = "Message from Customer (Memories @ Your Fingertips)";
-            message.Body = new TextPart("html")
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress("Memories @ Your Fingertips", configuration["Email:Account"]));
+                message.To.Add(new MailboxAddress("Memories @ Your FingerTips", configuration["Email:Receiver"]));
+                message.Subject = "Message from Customer (Memories @ Your Fingertips)";
+                message.Body = new TextPart("html")
+                {
+                    Text =
+                        "New message received from a customer: " +
+                        "<br>" + "<br>" +
+                        newEnquiries.message +
+                        "<br>" + "<br>" +
+                        "<i>Customer Name: </i>" + newEnquiries.name +
+                        "<br>" +
+                        "<i>Customer Email: </i>" +
+                         "<a href = 'mailto:" + newEnquiries.email +
+                        "?subject=" + "Reply from Memories @ Your Fingertips"
+                        + "&body=" + "Hi " + newEnquiries.name + "'>"
+                        + newEnquiries.email + "</a>" +
+                        "<br>" + "<br>" +
+                        "<i>This is a system generated email, please do not reply to this email.</i>" +
+                        "<br>" +
+                        "<i>Please click on customer email to reply.</i>"
+                };
+
+                using (var client = new MailKit.Net.Smtp.SmtpClient())
+                {
+                    //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
+                    //client.AuthenticationMechanisms.Remove("XOAUTH2");
+                    client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+
+                    //Google
+                    await client.ConnectAsync("smtp.gmail.com", 587, false);
+                    await client.AuthenticateAsync(configuration["Email:Account"], configuration["Email:Password"]);
+
+                    // Start of provider specific settings
+                    //Yhoo
+                    // client.Connect("smtp.mail.yahoo.com", 587, false);
+                    // client.Authenticate("yahoo", "password");
+
+                    // End of provider specific settings
+                    await client.SendAsync(message);
+                    await client.DisconnectAsync(true);
+                    client.Dispose();
+                }
+            }
+            catch (Exception ex)
             {
-                Text =
-                    "New message received from a customer: " +
-                    "<br>" + "<br>" +
-                    newEnquiries.message +
-                    "<br>" + "<br>" +
-                    "<i>Customer Name: </i>" + newEnquiries.name +
-                    "<br>" +
-                    "<i>Customer Email: </i>" +
-                     "<a href = 'mailto:" + newEnquiries.email +
-                    "?subject=" + "Reply from Memories @ Your Fingertips"
-                    + "&body=" + "Hi " + newEnquiries.name + "'>"
-                    + newEnquiries.email + "</a>" +
-                    "<br>" + "<br>" +
-                    "<i>This is a system generated email, please do not reply to this email.</i>" +
-                    "<br>" +
-                    "<i>Please click on customer email to reply.</i>"
-            };
-
-            using (var client = new MailKit.Net.Smtp.SmtpClient())
-            {
-                //client.ServerCertificateValidationCallback = (sender, certificate, chain, errors) => true;
-                //client.AuthenticationMechanisms.Remove("XOAUTH2");
-                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-
-                //Google
-                await client.ConnectAsync("smtp.gmail.com", 587, false);
-                await client.AuthenticateAsync(configuration["Email:Account"], configuration["Email:Password"]);
-
-                // Start of provider specific settings
-                //Yhoo
-                // client.Connect("smtp.mail.yahoo.com", 587, false);
-                // client.Authenticate("yahoo", "password");
-
-                // End of provider specific settings
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
-                client.Dispose();
+                throw new AppException(ex.Message);
             }
         }
 
@@ -262,11 +276,11 @@ namespace FYP.Services
                         else itemAtr += "(" + atr.AttributeValue + ")";
 
                     }
-                    table += "<tr class='eachItem'><td width='80%' class='purchase_item'>" 
-                        + "<img src='" + item.OrderImageUrl + "' alt='' width='80' height='80'>" 
-                        + " " + itemProduct.Product.ProductName + itemAtr 
-                        + "</td><td class='align-right' width='20%' class='purchase_item'>" 
-                        + itemProduct.Product.Price.ToString("C", CultureInfo.CurrentCulture) + "</td></tr>";
+                    table += "<tr class='eachItem'><td width='80%' class='purchase_item'>"
+                        + "<img src='" + item.OrderImageUrl + "' alt='' width='80' height='80'>"
+                        + " " + itemProduct.Product.ProductName + itemAtr
+                        + "</td><td class='align-right' width='20%' class='purchase_item'>"
+                        + itemProduct.Product.Price.ToString("C", CultureInfo.CurrentCulture) + " x " + item.Quantity + "</td></tr>";
                 }
                 text = text.Replace(
                 "<tr class='eachItem'><td width='40%' class='purchase_item'>{{description}}</td><td class='align-right' width='20%' class='purchase_item'>{{amount}}</td></tr>",
@@ -302,10 +316,10 @@ namespace FYP.Services
                             + newOrder.Address.Country);
                 }
                 if (newOrder.Request != "")
-                    text = text.Replace("<!-- SR content -->", 
-                        "<table class='purchase' width='100%' cellpadding='0' cellspacing='0'><tr><td>" + 
-                        "<h3>Special Request</h3></td></tr><tr><td colspan='2'><tr width='20%' class='deliveryAdd'>" + 
-                        "<td width='40%' class='purchase_item'>" + newOrder.Request + 
+                    text = text.Replace("<!-- SR content -->",
+                        "<table class='purchase' width='100%' cellpadding='0' cellspacing='0'><tr><td>" +
+                        "<h3>Special Request</h3></td></tr><tr><td colspan='2'><tr width='20%' class='deliveryAdd'>" +
+                        "<td width='40%' class='purchase_item'>" + newOrder.Request +
                         "</td><tr><td width='20%' class='purchase_footer' valign='middle'></td></tr></td></tr></table>");
 
                 message.Body = new TextPart("html")
@@ -336,10 +350,7 @@ namespace FYP.Services
             }
             catch (Exception ex)
             {
-                throw new AppException("Unable to generate email.", new
-                {
-                    message = ex.Message
-                });
+                throw new AppException("Unable to generate email.", ex.Message);
             }
 
         }

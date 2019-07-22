@@ -1,6 +1,7 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
+using FYP.Helpers;
 using FYP.Models;
 using Microsoft.AspNetCore.Http;
 using SixLabors.ImageSharp;
@@ -36,38 +37,6 @@ namespace FYP.Services
         public S3Service(IAmazonS3 client)
         {
             _client = client;
-        }
-
-        public List<string> GetPresignedImageURLs(List<string> guids)
-        {
-            List<string> urlStrings = new List<string>();
-            try
-            {
-                foreach (string guid in guids)
-                {
-                    GetPreSignedUrlRequest request = new GetPreSignedUrlRequest
-                    {
-                        BucketName = permBucket,
-                        Key = guid,
-                        Expires = DateTime.Now.AddMinutes(5),
-                        // if you want to download directly on link click/open
-                        ResponseHeaderOverrides = new ResponseHeaderOverrides
-                        {
-                            ContentDisposition = "attachment; filename=" + guid
-                        }
-                    };
-                    urlStrings.Add(_client.GetPreSignedURL(request));
-                }
-            }
-            catch (AmazonS3Exception e)
-            {
-                Console.WriteLine("Error encountered on server. Message:'{0}' when writing an object", e.Message);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
-            }
-            return urlStrings;
         }
 
         public async Task<string> UploadImageAsync(IFormFile image, string guid)
@@ -115,14 +84,44 @@ namespace FYP.Services
                 }
                 catch (AmazonS3Exception ex)
                 {
-                    Console.WriteLine("Error encountered on server. Message:'{0}' when writing an object", ex.Message);
+                    throw new AppException("Error encountered on server. Message:'{0}' when writing an object", ex.Message);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Unknown error encountered on server. Message:'{0}' when writing an object", ex.Message);
+                    throw new AppException("Unknown error encountered on server. Message:'{0}' when writing an object", ex.Message);
                 }
             }
             return null;
+        }
+
+        public async Task<List<string>> CopyImagesAsync(List<string> imgKeys)
+        {
+            List<string> imgUrls = new List<string>();
+
+            try
+            {
+                foreach (string key in imgKeys)
+                {
+                    CopyObjectRequest request = new CopyObjectRequest
+                    {
+                        SourceBucket = tempBucket,
+                        SourceKey = key,
+                        DestinationBucket = permBucket,
+                        DestinationKey = key
+                    };
+                    await _client.CopyObjectAsync(request);
+                    imgUrls.Add("https://" + thumbBucket + ".s3-ap-southeast-1.amazonaws.com/" + key);
+                }
+            }
+            catch (AmazonS3Exception ex)
+            {
+                throw new AppException("Error encountered on server. Message:'{0}' when writing an object", ex.Message);
+            }
+            catch (Exception ex)
+            {
+                throw new AppException("Unknown error encountered on server. Message:'{0}' when writing an object", ex.Message);
+            }
+            return imgUrls;
         }
 
         public async Task<List<ProductImage>> UploadProductImagesAsync(List<ProductImage> imageFiles)
@@ -158,7 +157,7 @@ namespace FYP.Services
                         images.Add(new ProductImage
                         {
                             ImageKey = file.ImageKey,
-                            ImageUrl = "https://" + productBucket + ".s3-ap-southeast-1.amazonaws.com/" + file.ImageKey
+                            ImageUrl = "https://" + productBucket + ".s3-ap-southeast-1.amazonaws.com/" + file.ImageKey,
                         });
 
                         var fileTransferUtilityRequest = new TransferUtilityUploadRequest
@@ -167,7 +166,7 @@ namespace FYP.Services
                             InputStream = outputStream,
                             StorageClass = S3StorageClass.Standard,
                             //PartSize = 10485760, // 10mb
-                            Key = file.ImageKey, 
+                            Key = file.ImageKey,
                             CannedACL = S3CannedACL.PublicRead
                         };
 
@@ -177,11 +176,11 @@ namespace FYP.Services
                     }
                     catch (AmazonS3Exception ex)
                     {
-                        Console.WriteLine("Error encountered on server. Message:'{0}' when writing an object", ex.Message);
+                        throw new AppException("Error encountered on server. Message:'{0}' when writing an object", ex.Message);
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("Unknown error encountered on server. Message:'{0}' when writing an object", ex.Message);
+                        throw new AppException("Unknown error encountered on server. Message:'{0}' when writing an object", ex.Message);
                     }
                 }
             }
@@ -189,36 +188,38 @@ namespace FYP.Services
             return images;
         }
 
-        public async Task<List<string>> CopyImagesAsync(List<string> imgKeys)
+        public List<string> GetPresignedImageURLs(List<string> guids)
         {
-            List<string> imgUrls = new List<string>();
-            
+            List<string> urlStrings = new List<string>();
             try
             {
-                foreach (string key in imgKeys)
+                foreach (string guid in guids)
                 {
-                    CopyObjectRequest request = new CopyObjectRequest
+                    GetPreSignedUrlRequest request = new GetPreSignedUrlRequest
                     {
-                        SourceBucket = tempBucket,
-                        SourceKey = key,
-                        DestinationBucket = permBucket,
-                        DestinationKey = key
+                        BucketName = permBucket,
+                        Key = guid,
+                        Expires = DateTime.Now.AddMinutes(5),
+                        // if you want to download directly on link click/open
+                        ResponseHeaderOverrides = new ResponseHeaderOverrides
+                        {
+                            ContentDisposition = "attachment; filename=" + guid
+                        }
                     };
-                    await _client.CopyObjectAsync(request);
-                    imgUrls.Add("https://" + thumbBucket + ".s3-ap-southeast-1.amazonaws.com/" + key);
+                    urlStrings.Add(_client.GetPreSignedURL(request));
                 }
             }
-            catch (AmazonS3Exception ex)
+            catch (AmazonS3Exception e)
             {
-                Console.WriteLine("Error encountered on server. Message:'{0}' when writing an object", ex.Message);
+                throw new AppException("Error encountered on server. Message:'{0}' when writing an object", e.Message);
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Console.WriteLine("Unknown error encountered on server. Message:'{0}' when writing an object", ex.Message);
+                throw new AppException("Unknown encountered on server. Message:'{0}' when writing an object", e.Message);
             }
-            return imgUrls;
+            return urlStrings;
         }
-
+        
         public async Task DeleteProductImagesAsync(List<string> keys)
         {
             List<KeyVersion> delKeys = new List<KeyVersion>();
@@ -235,11 +236,11 @@ namespace FYP.Services
             try
             {
                 DeleteObjectsResponse response = await _client.DeleteObjectsAsync(multiObjectDeleteRequest);
-                Console.WriteLine("Successfully deleted all the {0} items", response.DeletedObjects.Count);
+                throw new AppException("Successfully deleted all the {0} object(s).", response.DeletedObjects.Count);
             }
             catch (DeleteObjectsException e)
             {
-                Console.WriteLine("Unable to delete {0} objects out of {1} objects.", e.Response.DeleteErrors.Count, e.Response.DeletedObjects.Count);
+                throw new AppException("Unable to delete {0} object(s) out of {1} objects.", e.Response.DeleteErrors.Count, e.Response.DeletedObjects.Count);
             }
         }
 
@@ -259,11 +260,11 @@ namespace FYP.Services
             try
             {
                 DeleteObjectsResponse response = await _client.DeleteObjectsAsync(multiObjectDeleteRequest);
-                Console.WriteLine("Successfully deleted all the {0} items", response.DeletedObjects.Count);
+                throw new AppException("Successfully deleted all the {0} object(s).", response.DeletedObjects.Count);
             }
             catch (DeleteObjectsException e)
             {
-                Console.WriteLine("Unable to delete {0} objects out of {1} objects.", e.Response.DeleteErrors.Count, e.Response.DeletedObjects.Count);
+                throw new AppException("Unable to delete {0} object(s) out of {1} objects.", e.Response.DeleteErrors.Count, e.Response.DeletedObjects.Count);
             }
         }
     }
