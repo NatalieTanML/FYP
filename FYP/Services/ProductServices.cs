@@ -1,23 +1,15 @@
-﻿using BraintreeHttp;
-using FYP.Data;
+﻿using FYP.Data;
 using FYP.Helpers;
 using FYP.Models;
-
+using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using SixLabors.ImageSharp;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
-using System.IO;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using Amazon.S3.Transfer;
-using Amazon.S3;
-using System.Net;
-using System.Globalization;
-using LazyCache;
 
 namespace FYP.Services
 {
@@ -41,7 +33,7 @@ namespace FYP.Services
         private readonly IS3Service _s3Service;
         private readonly IAppCache _cache;
 
-        public ProductService(ApplicationDbContext context, 
+        public ProductService(ApplicationDbContext context,
             IOptions<AppSettings> appSettings,
             IS3Service s3Service,
             IAppCache appCache)
@@ -102,7 +94,7 @@ namespace FYP.Services
             // checks if another product with the same name exists already
             if (await _context.Products.AnyAsync(p => p.ProductName == product.ProductName))
                 throw new AppException("Product name '" + product.ProductName + "' already exists in the database.");
-            
+
             try
             {
                 // ensure the prices are properly entered
@@ -164,7 +156,7 @@ namespace FYP.Services
                     ImageWidth = double.Parse(product.ImageWidth.ToString()),
                     ImageHeight = double.Parse(product.ImageHeight.ToString()),
                     EffectiveStartDate = DateTime.ParseExact(product.EffectiveStartDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
-                    EffectiveEndDate = string.IsNullOrWhiteSpace(product.EffectiveEndDate.ToString()) ? (DateTime?) null : DateTime.ParseExact(product.EffectiveEndDate?.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
+                    EffectiveEndDate = string.IsNullOrWhiteSpace(product.EffectiveEndDate.ToString()) ? (DateTime?)null : DateTime.ParseExact(product.EffectiveEndDate?.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
                     CreatedAt = DateTime.Now,
                     CreatedById = product.CreatedById,
                     UpdatedAt = DateTime.Now,
@@ -173,7 +165,7 @@ namespace FYP.Services
                     Options = newOptions,
                     CategoryId = product.CategoryId.Equals(0) ? null : product.CategoryId
                 };
-                
+
                 // add to database
                 await _context.Products.AddAsync(newProduct);
                 await _context.SaveChangesAsync();
@@ -203,7 +195,8 @@ namespace FYP.Services
                 throw new AppException("Product not found.");
 
             // product exists, try to update
-            try {
+            try
+            {
                 // checks if another product with the same name exists already
                 if (await _context.Products
                     .Where(p => p.ProductId != productParam.ProductId)
@@ -240,7 +233,7 @@ namespace FYP.Services
                         });
                     }
                 }
-                
+
                 // ensure the new options are properly entered
                 List<Option> newOptions = new List<Option>();
                 foreach (Option op in productParam.Options)
@@ -470,7 +463,7 @@ namespace FYP.Services
                 // Check if today's date is within discount start date and end date
                 // if there is no end date, check to see if discount is currently happening
                 if ((todayDate >= productDiscount.EffectiveStartDate &&
-                    todayDate < productDiscount.EffectiveEndDate) || 
+                    todayDate < productDiscount.EffectiveEndDate) ||
                     (todayDate >= productDiscount.EffectiveStartDate &&
                     productDiscount.EffectiveEndDate == null))
                 {
@@ -494,10 +487,12 @@ namespace FYP.Services
                         var discountPercentage =
                             Math.Ceiling((basePrice - productDiscount.DiscountValue) / basePrice * 100);
 
+                        var discountValue = basePrice - productDiscount.DiscountValue;
+
                         effectiveDiscountPrice.Add(new
                         {
                             productDiscount.DiscountPriceId,
-                            productDiscount.DiscountValue,
+                            discountValue,
                             productDiscount.IsPercentage,
                             discountPercentage
                         });
