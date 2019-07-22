@@ -484,10 +484,11 @@ namespace FYP.Services
                     else
                     {
                         // Calculate the discount percentage based on the discount price
-                        var discountPercentage =
-                            Math.Ceiling((basePrice - productDiscount.DiscountValue) / basePrice * 100);
-
                         var discountValue = basePrice - productDiscount.DiscountValue;
+                        var discountPercentage =
+                            Math.Ceiling((basePrice - discountValue) / basePrice * 100);
+
+
 
                         effectiveDiscountPrice.Add(new
                         {
