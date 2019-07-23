@@ -236,7 +236,7 @@ namespace FYP.Services
             try
             {
                 DeleteObjectsResponse response = await _client.DeleteObjectsAsync(multiObjectDeleteRequest);
-                throw new AppException("Successfully deleted all the {0} object(s).", response.DeletedObjects.Count);
+                Console.WriteLine("Successfully deleted all the {0} object(s).", response.DeletedObjects.Count);
             }
             catch (DeleteObjectsException e)
             {
@@ -260,7 +260,7 @@ namespace FYP.Services
             try
             {
                 DeleteObjectsResponse response = await _client.DeleteObjectsAsync(multiObjectDeleteRequest);
-                throw new AppException("Successfully deleted all the {0} object(s).", response.DeletedObjects.Count);
+                Console.WriteLine("Successfully deleted all the {0} object(s).", response.DeletedObjects.Count);
             }
             catch (DeleteObjectsException e)
             {
