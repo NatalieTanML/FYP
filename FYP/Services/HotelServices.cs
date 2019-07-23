@@ -13,6 +13,7 @@ namespace FYP.Services
     public interface IHotelService
     {
         Task<IEnumerable<Hotel>> GetHotels();
+        Task<IEnumerable<Hotel>> GetHotelsEcommerce();
         Task<Hotel> GetById(int id);
         Task AddHotel(Hotel inHotel);
         Task UpdateHotel(Hotel inHotel);
@@ -33,6 +34,11 @@ namespace FYP.Services
         public async Task<IEnumerable<Hotel>> GetHotels()
         {
             return await _context.Hotels.Include(hotel => hotel.Addresses).ToListAsync();
+        }
+
+        public async Task<IEnumerable<Hotel>> GetHotelsEcommerce()
+        {
+            return await _context.Hotels.Include(hotel => hotel.Addresses).Where(hotel => hotel.IsActive == true).ToListAsync();
         }
 
         public async Task<Hotel> GetById(int id)

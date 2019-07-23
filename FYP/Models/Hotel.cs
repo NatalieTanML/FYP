@@ -13,6 +13,7 @@ namespace FYP.Models
         public string HotelName { get; set; }
         public string HotelAddress { get; set; }
         public string HotelPostalCode { get; set; }
+        public bool IsActive { get; set; }
 
         public ICollection<Address> Addresses { get; set; }
     }

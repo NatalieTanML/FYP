@@ -42,7 +42,30 @@ namespace FYP.APIs
                     value = hotel.HotelId,
                     text = hotel.HotelName,
                     hotelAddress = hotel.HotelAddress,
-                    hotelPostalCode = hotel.HotelPostalCode
+                    hotelPostalCode = hotel.HotelPostalCode,
+                    isActive = hotel.IsActive
+                });
+            }
+            return new JsonResult(hotelList);
+        }
+
+        [AllowAnonymous]
+        [HttpGet("ecommerce")]
+        public async Task<IActionResult> GetHotelsEcommerce()
+        {
+            //calls hotelService
+            var hotels = await _hotelService.GetHotelsEcommerce();
+            //creates a list of objects(of any type) to store hotel info 
+            List<object> hotelList = new List<object>();
+            foreach (Hotel hotel in hotels)
+            {
+                hotelList.Add(new
+                {
+                    value = hotel.HotelId,
+                    text = hotel.HotelName,
+                    hotelAddress = hotel.HotelAddress,
+                    hotelPostalCode = hotel.HotelPostalCode,
+                    isActive = hotel.IsActive
                 });
             }
             return new JsonResult(hotelList);
