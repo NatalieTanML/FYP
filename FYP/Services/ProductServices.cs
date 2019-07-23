@@ -51,29 +51,36 @@ namespace FYP.Services
                 .Include(product => product.Category)
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
-                .ThenInclude(option => option.ProductImages)
+                    .ThenInclude(option => option.ProductImages)
                 .Include(product => product.Options)
-                .ThenInclude(o => o.Attributes)
+                    .ThenInclude(o => o.Attributes)
                 .ToListAsync();
         }
 
         public async Task<IEnumerable<Product>> GetByPage(int pageNumber, int productsPerPage)
         {
+            // returns products if its currently active (for ecommerce)
             return await _context.Products
                 .Skip((pageNumber - 1) * productsPerPage)
                 .Take(productsPerPage)
                 .Include(product => product.Category)
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
-                .ThenInclude(o => o.ProductImages)
+                    .ThenInclude(o => o.ProductImages)
                 .Include(product => product.Options)
-                .ThenInclude(o => o.Attributes)
+                    .ThenInclude(o => o.Attributes)
+                .Where(product => (product.EffectiveStartDate <= DateTime.Now && product.EffectiveEndDate > DateTime.Now)
+                    || (product.EffectiveStartDate <= DateTime.Now && product.EffectiveEndDate == null))
                 .ToListAsync();
         }
 
         public async Task<int> GetTotalNumberOfProducts()
         {
-            return await _context.Products.CountAsync();
+            // returns product count if its currently active (for ecommerce)
+            return await _context.Products
+                .Where(product => (product.EffectiveStartDate <= DateTime.Now && product.EffectiveEndDate > DateTime.Now)
+                    || (product.EffectiveStartDate <= DateTime.Now && product.EffectiveEndDate == null))
+                .CountAsync();
         }
 
         public async Task<Product> GetById(int id)
@@ -415,7 +422,7 @@ namespace FYP.Services
                 // stockUpdate should be the amount of stock added/removed
                 // e.g. current qty = 100, stockUpdate = 30 
                 // 100 + 30 = 130 (new stock amt, add 30)
-                // e.g.2 curr qty = 100, stockUpdate = -10
+                // e.g. current qty = 100, stockUpdate = -10
                 // 100 + -10 = 90 (new stock amt, minus 10)
                 option.CurrentQuantity += stockUpdate;
                 _context.Options.Update(option);
@@ -427,7 +434,7 @@ namespace FYP.Services
             }
         }
 
-        // technically can't delete products, only make them "expire"
+        // technically can't delete products, only make them "expire" by setting the end date
         public async Task Delete(int id)
         {
             // find product to delete
@@ -487,9 +494,7 @@ namespace FYP.Services
                         var discountValue = basePrice - productDiscount.DiscountValue;
                         var discountPercentage =
                             Math.Ceiling((basePrice - discountValue) / basePrice * 100);
-
-
-
+                        
                         effectiveDiscountPrice.Add(new
                         {
                             productDiscount.DiscountPriceId,

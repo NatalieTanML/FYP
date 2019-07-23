@@ -84,6 +84,7 @@ namespace FYP.Services
                 hotel.HotelName = inHotel.HotelName;
                 hotel.HotelAddress = inHotel.HotelAddress;
                 hotel.HotelPostalCode = inHotel.HotelPostalCode;
+                hotel.IsActive = inHotel.IsActive;
 
                 _context.Hotels.Update(hotel);
                 await _context.SaveChangesAsync();
@@ -94,6 +95,8 @@ namespace FYP.Services
             }
         }
 
+        // technically can't delete hotels, only make them active/not active
+        // this is to help protect the database data integrity/foreign keys etc
         public async Task DeleteHotel(int id)
         {
             try
