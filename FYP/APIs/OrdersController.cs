@@ -439,8 +439,13 @@ namespace FYP.APIs
             int updatedById = 4;
             try
             {
-                await _orderService.UpdateRecipient(orderIds, recipient, updatedById);
-                return Ok(new { message = "Updated order(s) recipient successfuly!" });
+                var updatedOrders = await _orderService.UpdateRecipient(orderIds, recipient, updatedById);
+
+                return Ok(new
+                {
+                    message = "Updated orders statuses successfully!",
+                    orders = updatedOrders
+                });
             }
             catch (Exception ex)
             {

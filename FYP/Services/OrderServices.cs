@@ -34,7 +34,7 @@ namespace FYP.Services
         Task UpdateOrder(Order inOrder, int updatedBy);
         Task<List<object>> UpdateStatuses(List<int> orderIds, int updatedById, bool isSuccessful);
         Task AssignDeliveryman(List<int> orderIds, int deliveryManId, int updatedById);
-        Task UpdateRecipient(List<int> orderIds, OrderRecipient recipient, int updatedById);
+        Task<List<object>> UpdateRecipient(List<int> orderIds, OrderRecipient recipient, int updatedById);
         Task<IEnumerable<DeliveryType>> GetAllDeliveryTypes();
     }
 
@@ -417,7 +417,7 @@ namespace FYP.Services
             await _orderHub.NotifyMultipleChanges(orderIds);
         }
 
-        public async Task UpdateRecipient(List<int> orderIds, OrderRecipient recipient, int updatedById)
+        public async Task<List<object>> UpdateRecipient(List<int> orderIds, OrderRecipient recipient, int updatedById)
         {
             // grabs valid orders with matching id
             var orders = await _context.Orders.Where(i => orderIds.Contains(i.OrderId)).ToListAsync();
@@ -425,6 +425,12 @@ namespace FYP.Services
             // if orders does not exist
             if (orders == null)
                 throw new AppException("Orders not found.");
+
+            var statuses = await _context.Status
+               .AsNoTracking()
+               .ToListAsync();
+
+            List<object> updated = new List<object>();
 
             recipient.ReceivedAt = DateTime.Now;
             await _context.OrderRecipients.AddAsync(recipient);
@@ -436,11 +442,20 @@ namespace FYP.Services
                 order.UpdatedById = updatedById;
                 order.OrderRecipientId = recipient.OrderRecipientId;
                 order.StatusId = 5; // marked as delivery complete
+
+                updated.Add(new
+                {
+                    orderId = order.OrderId,
+                    statusId = order.StatusId,
+                    statusName = statuses.Where(s => s.StatusId == order.StatusId).FirstOrDefault().StatusName
+                });
             }
 
             _context.Orders.UpdateRange(orders);
             await _context.SaveChangesAsync();
             await _orderHub.NotifyMultipleChanges(orderIds);
+
+            return updated;
         }
 
         // private helper methods
