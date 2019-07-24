@@ -61,8 +61,6 @@ namespace FYP.Services
         {
             // returns products if its currently active (for ecommerce)
             return await _context.Products
-                .Skip((pageNumber - 1) * productsPerPage)
-                .Take(productsPerPage)
                 .Include(product => product.Category)
                 .Include(product => product.DiscountPrices)
                 .Include(product => product.Options)
@@ -71,7 +69,10 @@ namespace FYP.Services
                     .ThenInclude(o => o.Attributes)
                 .Where(product => (product.EffectiveStartDate <= DateTime.Now && product.EffectiveEndDate > DateTime.Now)
                     || (product.EffectiveStartDate <= DateTime.Now && product.EffectiveEndDate == null))
-                .ToListAsync();
+                .Select(product => product)
+                .Skip((pageNumber - 1) * productsPerPage)
+                .Take(productsPerPage)
+                .ToListAsync();         
         }
 
         public async Task<int> GetTotalNumberOfProducts()
