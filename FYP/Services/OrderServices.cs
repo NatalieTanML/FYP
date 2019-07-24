@@ -232,18 +232,25 @@ namespace FYP.Services
 
         public async Task<object> GetOrderTracking(string refNo)
         {
-            var order = await _context.Orders
+            try
+            {
+                var order = await _context.Orders
                 .Where(o => o.ReferenceNo == refNo)
                 .Include(o => o.Status)
                 .FirstOrDefaultAsync();
 
-            return new
+                return new
+                {
+                    orderId = order.ReferenceNo,
+                    statusId = order.StatusId,
+                    statusName = order.Status.StatusName,
+                    updatedAt = order.UpdatedAt
+                };
+            }
+            catch (Exception ex)
             {
-                orderId = order.OrderId,
-                statusId = order.StatusId,
-                statusName = order.Status.StatusName,
-                updatedAt = order.UpdatedAt
-            };
+                throw new AppException("Order does not exist.");
+            }
         }
 
         public async Task UpdateOrder(Order inOrder, int updatedBy)
