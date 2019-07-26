@@ -125,8 +125,7 @@ namespace FYP.Services
                     // check to see if old password entered is correct
                     if (VerifyPasswordHash(oldPassword, user.PasswordHash, user.PasswordSalt))
                     {
-                        byte[] passwordHash, passwordSalt;
-                        CreatePasswordHash(newPassword, out passwordHash, out passwordSalt);
+                        CreatePasswordHash(newPassword, out byte[] passwordHash, out byte[] passwordSalt);
                         user.PasswordHash = passwordHash;
                         user.PasswordSalt = passwordSalt;
 

@@ -84,7 +84,7 @@ namespace FYP.APIs
                     hotelName = hotel.HotelName,
                     hotelAddress = hotel.HotelAddress,
                     hotelPostalCode = hotel.HotelPostalCode,
-                    IsActive = hotel.IsActive
+                    isActive = hotel.IsActive
                 });
             }
             catch (NullReferenceException)

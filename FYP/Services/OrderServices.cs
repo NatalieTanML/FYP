@@ -247,7 +247,7 @@ namespace FYP.Services
                     updatedAt = order.UpdatedAt
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 throw new AppException("Order does not exist.");
             }
