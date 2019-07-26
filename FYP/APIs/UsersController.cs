@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json.Linq;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -216,15 +217,17 @@ namespace FYP.APIs
         
         [HttpPut("{id}")]
         [AllowAnonymous]
-        public async Task<IActionResult> UpdateUser(int id, [FromBody] User inUser)
+        public async Task<IActionResult> UpdateUser(int id, [FromBody] JObject data)
         {
-            string password = inUser.Password;
+            User inUser = data["inUser"].ToObject<User>();
+            string oldPassword = inUser.Password;
+            string newPassword = data["newPassword"].ToString();
             inUser.UserId = id;
             try
             {
-                // save (excluding password update)
-                await _userService.Update(inUser, password);
-                return Ok(new { message = "Completed user profile update!" });
+                // save 
+                await _userService.Update(inUser, oldPassword, newPassword);
+                return Ok(new { message = "Updated user profile successfully!" });
             }
             catch (Exception ex)
             {
@@ -239,6 +242,5 @@ namespace FYP.APIs
             await _userService.Delete(id);
             return Ok(new { message = "User deleted successfully!" });
         }
-        
     }
 }

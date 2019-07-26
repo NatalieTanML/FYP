@@ -19,7 +19,7 @@ namespace FYP.Services
         Task<User> GetById(int id);
         Task<User> Authenticate(string email, string password);
         Task<User> Create(User user);
-        Task Update(User user, string password);
+        Task Update(User user, string oldPassword, string newPassword);
         Task Delete(int id);
         Task<IEnumerable<Role>> GetAllRoles();
         Task<User> ChangePassword(int id);
@@ -105,7 +105,7 @@ namespace FYP.Services
             return user;
         }
 
-        public async Task Update(User userParam, string inPassword)
+        public async Task Update(User userParam, string oldPassword, string newPassword)
         {
             var user = await _context.Users.FindAsync(userParam.UserId);
 
@@ -116,21 +116,29 @@ namespace FYP.Services
             // ChangePassword page or from UpdateDetails page 
             // if the email is empty/null/"", it means that the 
             // request is to change password only, therefore just update the password
+            // this request is sent by the user himself
             if (string.IsNullOrWhiteSpace(userParam.Email))
             {
                 // update password if it was entered
-                if (!string.IsNullOrWhiteSpace(inPassword))
+                if (!string.IsNullOrWhiteSpace(newPassword))
                 {
-                    byte[] passwordHash, passwordSalt;
-                    CreatePasswordHash(inPassword, out passwordHash, out passwordSalt);
-                    user.PasswordHash = passwordHash;
-                    user.PasswordSalt = passwordSalt;
+                    // check to see if old password entered is correct
+                    if (VerifyPasswordHash(oldPassword, user.PasswordHash, user.PasswordSalt))
+                    {
+                        byte[] passwordHash, passwordSalt;
+                        CreatePasswordHash(newPassword, out passwordHash, out passwordSalt);
+                        user.PasswordHash = passwordHash;
+                        user.PasswordSalt = passwordSalt;
 
-                    user.ChangePassword = true;
+                        user.ChangePassword = true;
+                    }
+                    else
+                        throw new AppException("Old password entered is incorrect.");
                 }
             }
             // otherwise, if there are fields like email, it means the request
             // was sent from the UpdateDetails page from the user management pg
+            // this request is sent by an admin
             else
             {
                 if (userParam.Email != user.Email)
