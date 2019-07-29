@@ -19,7 +19,6 @@ namespace FYP.APIs
     public class ProductsController : Controller
     {
         private IProductService _productService;
-        //private IUserService _userService;
         private readonly AppSettings _appSettings;
 
         public ProductsController(IProductService productService,
@@ -29,8 +28,8 @@ namespace FYP.APIs
             _appSettings = appSettings.Value;
         }
 
+        // gets all products
         [HttpGet]
-        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
             var products = await _productService.GetAll();
@@ -89,6 +88,7 @@ namespace FYP.APIs
             return new JsonResult(productList);
         }
 
+        // gets products by the page number for ecommerce
         [AllowAnonymous]
         [HttpPost("page")]
         public async Task<IActionResult> GetProductsByPage([FromForm] IFormCollection inFormData)
@@ -148,14 +148,13 @@ namespace FYP.APIs
             }
         }
 
-        [AllowAnonymous]
+        // gets a product and its full details for admin portal
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProduct(int id)
         {
             try
             {
                 var product = await _productService.GetById(id);
-
                 return Ok(new
                 {
                     productId = product.ProductId,
@@ -214,6 +213,7 @@ namespace FYP.APIs
             }
         }
 
+        // gets a product with its active discount (if any) for ecommerce
         [AllowAnonymous]
         [HttpGet("ecommerce/{id}")]
         public async Task<IActionResult> GetProductEcommerce(int id)
@@ -256,21 +256,23 @@ namespace FYP.APIs
                         })
                 });
             }
+            catch (NullReferenceException)
+            {
+                return BadRequest(new { message = "Product does not exist." });
+            }
             catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
         }
 
-        
-
+        // creates a new product
         [HttpPost]
-        [AllowAnonymous]
         public async Task<IActionResult> CreateProduct([FromBody]Product inProduct)
         {
             // get current logged in user's id
-            //int currentUserId = int.Parse(User.FindFirst("userid").Value);
-            int currentUserId = 4;
+            int currentUserId = int.Parse(User.FindFirst("userid").Value);
+            //int currentUserId = 4;
 
             inProduct.CreatedById = currentUserId;
             inProduct.UpdatedById = currentUserId;
@@ -292,13 +294,12 @@ namespace FYP.APIs
             }
         }
 
+        // updates a product's details
         [HttpPut]
-        [AllowAnonymous]
         public async Task<IActionResult> UpdateProduct([FromBody] Product inProduct)
         {
             // get current logged in user's id
-            //int currentUserId = int.Parse(User.FindFirst("userid").Value);
-            int currentUserId = 4;
+            int currentUserId = int.Parse(User.FindFirst("userid").Value);
             inProduct.UpdatedById = currentUserId;
 
             try
@@ -316,7 +317,7 @@ namespace FYP.APIs
             }
         }
 
-        [AllowAnonymous]
+        // updates a product's stock
         [HttpPut("stock/{id:int}/{amount:int}")]
         public async Task<IActionResult> UpdateStock(int id, int amount)
         {
@@ -337,6 +338,7 @@ namespace FYP.APIs
         }
 
         // technically can't delete products, only make them "expire"
+        // use only if absolutely needed
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {

@@ -13,17 +13,16 @@ namespace FYP.Services
 {
     public class PayPalClient
     {
+        
         /**
                Set up PayPal environment with sandbox credentials.
                In production, use ProductionEnvironment.
             */
         public static PayPalEnvironment Environment()
         {
-            var builder = new ConfigurationBuilder().SetBasePath
-                (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
-            var configuration = builder.Build();
-
-            return new SandboxEnvironment(configuration["PayPal:ClientID"], configuration["PayPal:ClientSecret"]);
+            string paypalClientId = System.Environment.GetEnvironmentVariable("PayPal:ClientID");
+            string paypalClientSecret = System.Environment.GetEnvironmentVariable("PayPal:ClientSecret");
+            return new SandboxEnvironment(paypalClientId, paypalClientSecret);
         }
 
         /**

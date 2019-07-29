@@ -29,10 +29,10 @@ namespace FYP.Services
     public class S3Service : IS3Service
     {
         private readonly IAmazonS3 _client;
-        private const string tempBucket = "mayf-test-temp1";
-        private const string permBucket = "mayf-test-perm1";
-        private const string productBucket = "mayf-test-prod1";
-        private const string thumbBucket = "mayf-test-thumb1";
+        private readonly string tempBucket = Environment.GetEnvironmentVariable("TEMP_BUCKET");
+        private readonly string permBucket = Environment.GetEnvironmentVariable("PERM_BUCKET");
+        private readonly string productBucket = Environment.GetEnvironmentVariable("PRODUCT_BUCKET");
+        private readonly string thumbBucket = Environment.GetEnvironmentVariable("THUMBNAIL_BUCKET");
 
         public S3Service(IAmazonS3 client)
         {

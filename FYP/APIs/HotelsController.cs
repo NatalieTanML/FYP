@@ -17,9 +17,7 @@ namespace FYP.APIs
     [Route("api/[controller]")]
     public class HotelsController : ControllerBase
     {
-
         private IHotelService _hotelService;
-        //private IUserService _userService;
         private readonly AppSettings _appSettings;
 
         public HotelsController(IHotelService hotelService, IOptions<AppSettings> appSettings)
@@ -28,7 +26,7 @@ namespace FYP.APIs
             _appSettings = appSettings.Value;
         }
 
-        [AllowAnonymous]
+        // get all hotels
         [HttpGet]
         public async Task<IActionResult> GetHotels()
         {
@@ -49,6 +47,7 @@ namespace FYP.APIs
             return new JsonResult(hotelList);
         }
 
+        // gets all active hotels
         [AllowAnonymous]
         [HttpGet("ecommerce")]
         public async Task<IActionResult> GetHotelsEcommerce()
@@ -71,6 +70,7 @@ namespace FYP.APIs
             return new JsonResult(hotelList);
         }
 
+        // returns one hotel details
         [HttpGet("{id:int}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetOneHotel(int id)
@@ -97,8 +97,8 @@ namespace FYP.APIs
             }
         }
         
+        // creates a new hotel
         [HttpPost]
-        [AllowAnonymous]
         public async Task<IActionResult> AddHotel([FromBody] Hotel newHotel)
         {
             try
@@ -115,8 +115,8 @@ namespace FYP.APIs
             }
         }
         
+        // updates hotel details
         [HttpPut]
-        [AllowAnonymous]
         public async Task<IActionResult> UpdateHotel([FromBody] Hotel hotel)
         {
             try
@@ -133,8 +133,9 @@ namespace FYP.APIs
             }
         }
 
+        // shouldn't delete unless its immediately after creation
+        // use only if necessary
         [HttpDelete("{id:int}")]
-        [AllowAnonymous]
         public async Task<IActionResult> DeleteHotel(int id)
         {
             try

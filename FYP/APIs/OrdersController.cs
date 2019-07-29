@@ -33,8 +33,8 @@ namespace FYP.APIs
             _appSettings = appSettings.Value;
         }
 
+        // gets all orders
         [HttpGet]
-        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
             var orders = await _orderService.GetAll();
@@ -119,14 +119,13 @@ namespace FYP.APIs
             return new JsonResult(orderList);
         }
 
+        // gets one order by its id
         [HttpGet("{id}")]
-        [AllowAnonymous]
         public async Task<IActionResult> GetById(int id)
         {
             try
             {
                 var order = await _orderService.GetById(id);
-
                 return Ok(new
                 {
                     orderId = order.OrderId,
@@ -208,8 +207,8 @@ namespace FYP.APIs
             }
         }
 
+        // gets multiple orders by their ids
         [HttpPost("multi")]
-        [AllowAnonymous]
         public async Task<IActionResult> GetMultipleById([FromBody] List<int> orderIds)
         {
             var orders = await _orderService.GetMultipleById(orderIds);
@@ -294,8 +293,8 @@ namespace FYP.APIs
             return new JsonResult(orderList);
         }
 
+        // creates a new order
         [HttpPost]
-        [AllowAnonymous]
         public async Task<IActionResult> CreateOrder([FromBody]Order inOrder)
         {
             try
@@ -304,7 +303,6 @@ namespace FYP.APIs
                 Order newOrder = await _orderService.Create(inOrder);
                 // generate receipt
                 await _emailService.SendReceipt(newOrder);
-
                 return Ok(new
                 {
                     createSuccess = true,
@@ -318,6 +316,7 @@ namespace FYP.APIs
             }
         }
 
+        // gets an order's current status
         [HttpGet("track/{refNo}")]
         [AllowAnonymous]
         public async Task<IActionResult> GetOrderTracking(string refNo)
@@ -337,15 +336,15 @@ namespace FYP.APIs
             }
         }
 
+        // generates a random unique guid for the cart
         [HttpPost("guid")]
-        [AllowAnonymous]
         public IActionResult GenerateGUID()
         {
             return Ok(new { guid = Guid.NewGuid().ToString("N").ToUpper() });
         }
 
+        // gets a list of order status types
         [HttpGet("status")]
-        [AllowAnonymous]
         public async Task<IActionResult> GetOrderStatus()
         {
             var statuses = await _orderService.GetAllStatus();
@@ -361,19 +360,19 @@ namespace FYP.APIs
             return new JsonResult(statusList);
         }
 
+        // gets a list of delivery types
         [HttpGet("deliverytypes")]
         public async Task<IActionResult> GetAllDeliveryTypes()
         {
             var deliveryTypes = await _orderService.GetAllDeliveryTypes();
-
             return new JsonResult(deliveryTypes);
         }
-
+        
+        // updates an order
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateOrder([FromBody] Order order)
         {
-            //int updatedById = int.Parse(User.FindFirst("userid").Value);
-            int updatedById = 4; // update to current user
+            int updatedById = int.Parse(User.FindFirst("userid").Value);
             try
             {
                 await _orderService.UpdateOrder(order, updatedById);
@@ -389,15 +388,14 @@ namespace FYP.APIs
             }
         }
 
+        // update order(s) status
         [HttpPut("status/{isSuccessful:bool}")]
         public async Task<IActionResult> UpdateStatuses([FromBody] List<int> orderIds, bool isSuccessful)
         {
-            //int updatedById = int.Parse(User.FindFirst("userid").Value);
-            int updatedById = 4; // update to current user
+            int updatedById = int.Parse(User.FindFirst("userid").Value);
             try
             {
                 var updatedOrders = await _orderService.UpdateStatuses(orderIds, updatedById, isSuccessful);
-
                 return Ok(new
                 {
                     message = "Updated orders statuses successfully!",
@@ -411,16 +409,14 @@ namespace FYP.APIs
             }
         }
 
+        // updates an order to have a delivery man
         [HttpPut("deliveryman/{deliveryManId:int}")]
         public async Task<IActionResult> AssignDeliveryman([FromBody] List<int> orderIds, int deliveryManId)
         {
-            //int updatedById = int.Parse(User.FindFirst("userid").Value);
-            int updatedById = 4; // update to current user
+            int updatedById = int.Parse(User.FindFirst("userid").Value);
             try
             {
-
                 await _orderService.AssignDeliveryman(orderIds, deliveryManId, updatedById);
-
                 return Ok(new { message = "Updated order(s) deliveryman successfully!" });
             }
             catch (Exception ex)
@@ -430,17 +426,16 @@ namespace FYP.APIs
             }
         }
 
+        // updates an order as received and with a recipient name + signature
         [HttpPut("recipient")]
         public async Task<IActionResult> UpdateRecipient([FromBody] JObject data)
         {
             List<int> orderIds = data["orderIds"].ToObject<List<int>>();
             OrderRecipient recipient = data["recipient"].ToObject<OrderRecipient>();
-            //int updatedById = int.Parse(User.FindFirst("userid").Value);
-            int updatedById = 4;
+            int updatedById = int.Parse(User.FindFirst("userid").Value);
             try
             {
                 var updatedOrders = await _orderService.UpdateRecipient(orderIds, recipient, updatedById);
-
                 return Ok(new
                 {
                     message = "Updated orders statuses successfully!",

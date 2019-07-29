@@ -55,16 +55,11 @@ namespace FYP
                     Newtonsoft.Json.ReferenceLoopHandling.Ignore
                 );
             services.AddDbContextPool<ApplicationDbContext>(
-                options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"))
+                options => options.UseSqlServer(Environment.GetEnvironmentVariable("ConnectionStrings:DefaultConnection"))
             );
 
-            // configure strongly typed settings objects
-            var appSettingsSection = Configuration.GetSection("AppSettings");
-            services.Configure<AppSettings>(appSettingsSection);
-
             // configure jwt authentication
-            var appSettings = appSettingsSection.Get<AppSettings>();
-            var key = Encoding.ASCII.GetBytes(appSettings.Secret);
+            var key = Encoding.ASCII.GetBytes(Environment.GetEnvironmentVariable("AppSettings:Secret"));
             services.AddAuthentication(x =>
             {
                 x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -102,9 +97,6 @@ namespace FYP
             // add amazon s3 service
             services.AddSingleton<IS3Service, S3Service>();
             services.AddAWSService<IAmazonS3>();
-
-            // add lazycache
-            services.AddLazyCache();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

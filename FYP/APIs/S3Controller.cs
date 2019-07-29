@@ -71,7 +71,6 @@ namespace FYP.APIs
         // to the next json call to CreateProduct in ProductsController.
         // the list returned contains the image key + url for each image
         [HttpPost("product")]
-        [AllowAnonymous]
         public async Task<IActionResult> UploadProductImages(List<ProductImage> imageFiles)
         {
             try
@@ -91,7 +90,6 @@ namespace FYP.APIs
 
         // returns a presigned URL for access to private bucket objects
         [HttpPost("url")]
-        [AllowAnonymous]
         public IActionResult GetPresignedImageURLs([FromBody] List<string> guids)
         {
             try
@@ -111,7 +109,6 @@ namespace FYP.APIs
 
         // remove images from s3 using the keys
         [HttpPost("delete")]
-        [AllowAnonymous]
         public async Task<IActionResult> DeleteImagesFromS3([FromBody] List<string> guids)
         {
             try

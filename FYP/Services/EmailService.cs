@@ -30,28 +30,30 @@ namespace FYP.Services
     {
         private ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
-        private readonly IConfiguration _configuration;
         private readonly IProductService _productService;
+        private readonly string emailAccount, emailPassword, emailReceiver, emailHost, encryptionKey;
+        private readonly int emailPort;
 
         public EmailService(ApplicationDbContext context,
             IOptions<AppSettings> appSettings,
-            IConfiguration configuration,
             IProductService productService)
         {
             _context = context;
             _appSettings = appSettings.Value;
-            _configuration = configuration;
             _productService = productService;
+
+            emailAccount = Environment.GetEnvironmentVariable("Email:Account");
+            emailPassword = Environment.GetEnvironmentVariable("Email:Password");
+            emailReceiver = Environment.GetEnvironmentVariable("Email:Receiver");
+            emailHost = Environment.GetEnvironmentVariable("Email:Host");
+            emailPort = int.Parse(Environment.GetEnvironmentVariable("Email:Port"));
+            encryptionKey = Environment.GetEnvironmentVariable("Encryption:Key");
         }
 
         public async Task<User> GenerateNewPasswordAndEmail(User user, string messageSubject)
         {
             try
             {
-                var builder = new ConfigurationBuilder().SetBasePath
-                    (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
-                var configuration = builder.Build();
-
                 //Generate random string for password.
                 //interesting article https://stackoverflow.com/questions/37170388/create-a-cryptographically-secure-random-guid-in-net
                 RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
@@ -62,13 +64,12 @@ namespace FYP.Services
                 password = password.Substring(0, 11);
 
                 // Create password hash & salt
-                byte[] passwordHash, passwordSalt;
-                CreatePasswordHash(password, out passwordHash, out passwordSalt);
+                CreatePasswordHash(password, out byte[] passwordHash, out byte[] passwordSalt);
                 user.PasswordHash = passwordHash;
                 user.PasswordSalt = passwordSalt;
 
                 var message = new MimeMessage();
-                message.From.Add(new MailboxAddress("Memories @ Your Fingertips", configuration["Email:Account"]));
+                message.From.Add(new MailboxAddress("Memories @ Your Fingertips", emailAccount));
                 message.To.Add(new MailboxAddress(user.Name, user.Email));
                 message.Subject = messageSubject;
                 message.Body = new TextPart("html")
@@ -84,8 +85,8 @@ namespace FYP.Services
                     client.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
                     //Google
-                    await client.ConnectAsync("smtp.gmail.com", 587, false);
-                    await client.AuthenticateAsync(configuration["Email:Account"], configuration["Email:Password"]);
+                    await client.ConnectAsync(emailHost, emailPort, false);
+                    await client.AuthenticateAsync(emailAccount, emailPassword);
 
                     // Start of provider specific settings
                     //Yhoo
@@ -119,13 +120,9 @@ namespace FYP.Services
 
                 if (options == null)
                     throw new AppException("Options/SKUs do not exist.");
-
-                var builder = new ConfigurationBuilder().SetBasePath
-                    (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
-                var configuration = builder.Build();
-
+                
                 var message = new MimeMessage();
-                message.From.Add(new MailboxAddress("Memories @ Your FingerTips", configuration["Email:Account"]));
+                message.From.Add(new MailboxAddress("Memories @ Your FingerTips", emailAccount));
                 message.Subject = "Low Stock Notification";
                 foreach (User user in users)
                 {
@@ -151,8 +148,8 @@ namespace FYP.Services
                     client.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
                     //Google
-                    await client.ConnectAsync("smtp.gmail.com", 587, false);
-                    await client.AuthenticateAsync(configuration["Email:Account"], configuration["Email:Password"]);
+                    await client.ConnectAsync(emailHost, emailPort, false);
+                    await client.AuthenticateAsync(emailAccount, emailPassword);
 
                     // Start of provider specific settings
                     //Yhoo
@@ -181,14 +178,10 @@ namespace FYP.Services
                     email = enquiries.email,
                     message = enquiries.message
                 };
-
-                var builder = new ConfigurationBuilder().SetBasePath
-                    (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
-                var configuration = builder.Build();
-
+                
                 var message = new MimeMessage();
-                message.From.Add(new MailboxAddress("Memories @ Your Fingertips", configuration["Email:Account"]));
-                message.To.Add(new MailboxAddress("Memories @ Your FingerTips", configuration["Email:Receiver"]));
+                message.From.Add(new MailboxAddress("Memories @ Your Fingertips", emailAccount));
+                message.To.Add(new MailboxAddress("Memories @ Your Fingertips", emailReceiver));
                 message.Subject = "Message from Customer (Memories @ Your Fingertips)";
                 message.Body = new TextPart("html")
                 {
@@ -217,8 +210,8 @@ namespace FYP.Services
                     client.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
                     //Google
-                    await client.ConnectAsync("smtp.gmail.com", 587, false);
-                    await client.AuthenticateAsync(configuration["Email:Account"], configuration["Email:Password"]);
+                    await client.ConnectAsync(emailHost, emailPort, false);
+                    await client.AuthenticateAsync(emailAccount, emailPassword);
 
                     // Start of provider specific settings
                     //Yhoo
@@ -241,14 +234,10 @@ namespace FYP.Services
         {
             try
             {
-                var builder = new ConfigurationBuilder().SetBasePath
-                    (Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json");
-                var configuration = builder.Build();
-
-                var email = DecryptString(newOrder.Email, configuration["Encryption:Key"]);
+                var email = DecryptString(newOrder.Email, encryptionKey);
 
                 var message = new MimeMessage();
-                message.From.Add(new MailboxAddress("Memories @ Your FingerTips", configuration["Email:Account"]));
+                message.From.Add(new MailboxAddress("Memories @ Your Fingertips", emailAccount));
                 message.To.Add(new MailboxAddress(email, email));
                 message.Subject = "Your order receipt for 'Memories @ Your Fingertips'";
                 string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"EmailTemplate\receiptTemplate.txt");
@@ -266,7 +255,7 @@ namespace FYP.Services
                         .FirstOrDefaultAsync();
                     var itemAtr = " ";
                     var c = 1;
-                    // for attributes do a foreach (Attribute atr in itemProduct.Attributes), then atr.AttributeType and atr.AttributeValue
+
                     foreach (Attribute atr in itemProduct.Attributes)
                     {
                         if (itemProduct.Attributes.Count > 1)
@@ -277,8 +266,8 @@ namespace FYP.Services
                             c++;
                         }
                         else itemAtr += "(" + atr.AttributeValue + ")";
-
                     }
+
                     var product = await _productService.GetById(itemProduct.Product.ProductId);
                     var effectiveDiscountPrice = _productService.RetrieveEffectiveDiscount(product);
                     decimal itemPrice;
@@ -358,8 +347,8 @@ namespace FYP.Services
                     client.ServerCertificateValidationCallback = (s, c, h, e) => true;
 
                     //Google
-                    await client.ConnectAsync("smtp.gmail.com", 587, false);
-                    await client.AuthenticateAsync(configuration["Email:Account"], configuration["Email:Password"]);
+                    await client.ConnectAsync(emailHost, emailPort, false);
+                    await client.AuthenticateAsync(emailAccount, emailPassword);
 
                     // Start of provider specific settings
                     //Yhoo
@@ -376,7 +365,6 @@ namespace FYP.Services
             {
                 throw new AppException("Unable to generate email.", ex.Message);
             }
-
         }
 
         // private helper methods
@@ -389,7 +377,7 @@ namespace FYP.Services
             using (var hmac = new HMACSHA512())
             {
                 inPasswordSalt = hmac.Key;
-                inPasswordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(inPassword));
+                inPasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(inPassword));
             }
         }
 

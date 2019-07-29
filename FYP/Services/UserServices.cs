@@ -105,6 +105,23 @@ namespace FYP.Services
             return user;
         }
 
+        public async Task<User> ChangePassword(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            user = await _emailService.GenerateNewPasswordAndEmail(user, "Reset Password");
+
+            // Update user details
+            user.UpdatedAt = DateTime.Now;
+            user.ChangePassword = false;
+
+            // Add to database
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            // returns user once done
+            return user;
+        }
+
         public async Task Update(User userParam, string oldPassword, string newPassword)
         {
             var user = await _context.Users.FindAsync(userParam.UserId);
@@ -181,23 +198,6 @@ namespace FYP.Services
             {
                 throw new AppException("User not found.");
             }
-        }
-
-        public async Task<User> ChangePassword(int id)
-        {
-            var user = await _context.Users.FindAsync(id);
-            user = await _emailService.GenerateNewPasswordAndEmail(user, "Reset Password");
-
-            // Update user details
-            user.UpdatedAt = DateTime.Now;
-            user.ChangePassword = false;
-
-            // Add to database
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
-
-            // returns user once done
-            return user;
         }
 
         // private helper methods

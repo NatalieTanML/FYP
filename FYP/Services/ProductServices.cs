@@ -1,7 +1,6 @@
 ﻿using FYP.Data;
 using FYP.Helpers;
 using FYP.Models;
-using LazyCache;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp;
@@ -31,17 +30,14 @@ namespace FYP.Services
         private ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
         private readonly IS3Service _s3Service;
-        private readonly IAppCache _cache;
 
         public ProductService(ApplicationDbContext context,
             IOptions<AppSettings> appSettings,
-            IS3Service s3Service,
-            IAppCache appCache)
+            IS3Service s3Service)
         {
             _context = context;
             _appSettings = appSettings.Value;
             _s3Service = s3Service;
-            _cache = appCache;
         }
 
         public async Task<IEnumerable<Product>> GetAll()
@@ -357,6 +353,7 @@ namespace FYP.Services
                         {
                             ProductImage existingImage = existingOption.ProductImages
                                 .Where(i => i.ProductImageId == imgModel.ProductImageId)
+                                .Where(i => i.ProductImageId != 0)
                                 .SingleOrDefault();
 
                             if (existingImage != null)
@@ -375,6 +372,7 @@ namespace FYP.Services
                         {
                             Models.Attribute existingAttribute = existingOption.Attributes
                                 .Where(i => i.AttributeId == atrModel.AttributeId)
+                                .Where(i => i.AttributeId != 0)
                                 .SingleOrDefault();
 
                             if (existingAttribute != null)

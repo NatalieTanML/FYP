@@ -35,8 +35,8 @@ namespace FYP.APIs
             _appSettings = appSettings.Value;
         }
 
+        // gets all the users
         [HttpGet]
-        [AllowAnonymous]
         public async Task<IActionResult> GetAllUsers()
         {
             var users = await _userService.GetAll();
@@ -58,8 +58,8 @@ namespace FYP.APIs
             return new JsonResult(userList);
         }
 
+        // gets a user by their id
         [HttpGet("{id}")]
-        [AllowAnonymous]
         public async Task<IActionResult> GetUserById(int id)
         {
             try
@@ -86,8 +86,8 @@ namespace FYP.APIs
             }
         }
 
+        // gets all the users with the delivery man role
         [HttpGet("deliverymen")]
-        [AllowAnonymous]
         public async Task<IActionResult> GetAllDeliverymen()
         {
             var deliverymen = await _userService.GetDeliverymen();
@@ -106,8 +106,8 @@ namespace FYP.APIs
             return new JsonResult(userList);
         }
         
+        // gets all the role types
         [HttpGet("roles")]
-        [AllowAnonymous]
         public async Task<IActionResult> GetAllRoles()
         {
             var roles = await _userService.GetAllRoles();
@@ -123,6 +123,7 @@ namespace FYP.APIs
             return new JsonResult(rolesList);
         }
 
+        // sign in to the admin portal
         [AllowAnonymous]
         [HttpPost("signin")]
         public async Task<IActionResult> SignIn([FromBody] User inUser)
@@ -136,7 +137,7 @@ namespace FYP.APIs
                 return BadRequest(new { message = "Account is disabled. Please contact the administrator." });
 
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+            var key = Encoding.ASCII.GetBytes(Environment.GetEnvironmentVariable("AppSettings:Secret"));
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new Claim[]
@@ -169,14 +170,13 @@ namespace FYP.APIs
             });
         }
 
+        // sign up for an account at the admin portal
         [AllowAnonymous]
         [HttpPost("signup")]
         public async Task<IActionResult> SignUp([FromBody] User inUser)
         {
             // set current user's id
-            //inUser.CreatedById = int.Parse(User.FindFirst("userid").Value);
-            inUser.CreatedById = 4;
-
+            inUser.CreatedById = int.Parse(User.FindFirst("userid").Value);
             try
             {
                 // save new user
@@ -195,14 +195,14 @@ namespace FYP.APIs
             }
         }
 
-        [HttpPut("changepassword/{id}")]
+        // reset a user's password
         [AllowAnonymous]
+        [HttpPut("changepassword/{id}")]
         public async Task<IActionResult> ChangePassword(int id)
         {
             try
             {
                 await _userService.ChangePassword(id);
-
                 return Ok(new
                 {
                     message = "Password has been resetted!" 
@@ -214,9 +214,10 @@ namespace FYP.APIs
                 return BadRequest(new { message = ex.Message });
             }
         }
-        
-        [HttpPut("{id}")]
+
+        // update a user account
         [AllowAnonymous]
+        [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] JObject data)
         {
             User inUser = data["inUser"].ToObject<User>();
@@ -236,6 +237,8 @@ namespace FYP.APIs
             }
         }
 
+        // delete a user
+        // not recommended to use, use only if necessary
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {

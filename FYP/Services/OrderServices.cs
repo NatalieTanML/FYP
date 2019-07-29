@@ -42,12 +42,10 @@ namespace FYP.Services
     {
         private ApplicationDbContext _context;
         private readonly AppSettings _appSettings;
-        private readonly IConfiguration _configuration;
         private readonly IOrderHub _orderHub;
         private readonly IS3Service _s3Service;
         private readonly IProductService _productService;
         private readonly IEmailService _emailService;
-
         private readonly string encryptionKey;
         
         public OrderService(ApplicationDbContext context,
@@ -60,14 +58,13 @@ namespace FYP.Services
         {
             _context = context;
             _appSettings = appSettings.Value;
-            _configuration = configuration;
             _orderHub = orderHub;
             _s3Service = s3Service;
             _productService = productService;
             _emailService = emailService;
 
             // get encryption key for email
-            encryptionKey = _configuration.GetValue<string>("Encryption:Key");
+            encryptionKey = Environment.GetEnvironmentVariable("Encryption:Key");
         }
 
         public async Task<IEnumerable<Order>> GetAll()
