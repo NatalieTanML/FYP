@@ -99,6 +99,8 @@ namespace FYP.Services
             if (await _context.Products.AnyAsync(p => p.ProductName == product.ProductName))
                 throw new AppException("Product name '" + product.ProductName + "' already exists in the database.");
 
+            string[] formats = new string[] { "d/M/yyyy hh:mm:ss tt", "d/M/yyyy HH:mm:ss", "dd/MM/yyyy hh:mm:ss tt", "dd/MM/yyyy HH:mm:ss" };
+
             try
             {
                 // ensure the prices are properly entered
@@ -107,8 +109,8 @@ namespace FYP.Services
                 {
                     newPrices.Add(new DiscountPrice
                     {
-                        EffectiveStartDate = DateTime.ParseExact(price.EffectiveStartDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
-                        EffectiveEndDate = string.IsNullOrWhiteSpace(price.EffectiveEndDate.ToString()) ? (DateTime?)null : DateTime.ParseExact(price.EffectiveEndDate?.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
+                        EffectiveStartDate = DateTime.ParseExact(price.EffectiveStartDate.ToString(), formats, CultureInfo.InvariantCulture),
+                        EffectiveEndDate = string.IsNullOrWhiteSpace(price.EffectiveEndDate.ToString()) ? (DateTime?)null : DateTime.ParseExact(price.EffectiveEndDate?.ToString(), formats, CultureInfo.InvariantCulture),
                         DiscountValue = decimal.Parse(price.DiscountValue.ToString()),
                         IsPercentage = bool.Parse(price.IsPercentage.ToString())
                     });
@@ -198,6 +200,8 @@ namespace FYP.Services
             if (product == null)
                 throw new AppException("Product not found.");
 
+            string[] formats = new string[] { "d/M/yyyy hh:mm:ss tt", "d/M/yyyy HH:mm:ss", "dd/MM/yyyy hh:mm:ss tt", "dd/MM/yyyy HH:mm:ss" };
+
             // product exists, try to update
             try
             {
@@ -214,8 +218,8 @@ namespace FYP.Services
                 product.Price = decimal.Parse(productParam.Price.ToString());
                 product.ImageWidth = double.Parse(productParam.ImageWidth.ToString());
                 product.ImageHeight = double.Parse(productParam.ImageHeight.ToString());
-                product.EffectiveStartDate = DateTime.ParseExact(productParam.EffectiveStartDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture);
-                product.EffectiveEndDate = string.IsNullOrWhiteSpace(productParam.EffectiveEndDate.ToString()) ? (DateTime?)null : DateTime.ParseExact(productParam.EffectiveEndDate?.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture);
+                product.EffectiveStartDate = DateTime.ParseExact(productParam.EffectiveStartDate.ToString(), formats, CultureInfo.InvariantCulture);
+                product.EffectiveEndDate = string.IsNullOrWhiteSpace(productParam.EffectiveEndDate.ToString()) ? (DateTime?)null : DateTime.ParseExact(productParam.EffectiveEndDate?.ToString(), formats, CultureInfo.InvariantCulture);
                 product.UpdatedAt = DateTime.Now;
                 product.UpdatedById = productParam.UpdatedById;
                 _context.Products.Update(product);
@@ -230,8 +234,8 @@ namespace FYP.Services
                         {
                             DiscountPriceId = price.DiscountPriceId,
                             ProductId = price.ProductId,
-                            EffectiveStartDate = DateTime.ParseExact(price.EffectiveStartDate.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
-                            EffectiveEndDate = string.IsNullOrWhiteSpace(price.EffectiveEndDate.ToString()) ? (DateTime?)null : DateTime.ParseExact(price.EffectiveEndDate?.ToString(), "d/M/yyyy hh:mm:ss tt", CultureInfo.InvariantCulture),
+                            EffectiveStartDate = DateTime.ParseExact(price.EffectiveStartDate.ToString(), formats, CultureInfo.InvariantCulture),
+                            EffectiveEndDate = string.IsNullOrWhiteSpace(price.EffectiveEndDate.ToString()) ? (DateTime?)null : DateTime.ParseExact(price.EffectiveEndDate?.ToString(), formats, CultureInfo.InvariantCulture),
                             DiscountValue = decimal.Parse(price.DiscountValue.ToString()),
                             IsPercentage = bool.Parse(price.IsPercentage.ToString())
                         });

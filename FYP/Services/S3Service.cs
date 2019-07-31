@@ -41,7 +41,8 @@ namespace FYP.Services
 
         public async Task<string> UploadImageAsync(IFormFile image, string guid)
         {
-            if (image.Length > 0)
+            // check to see if file has data & is less than 20mb
+            if (image.Length > 0 && (image.Length / 1048576.0) < 15)
             {
                 MemoryStream outputStream = new MemoryStream();
 
@@ -68,7 +69,6 @@ namespace FYP.Services
                         BucketName = tempBucket,
                         InputStream = outputStream,
                         StorageClass = S3StorageClass.Standard,
-                        //PartSize = 10485760, // 10mb
                         Key = guid,
                         CannedACL = S3CannedACL.Private
                     };
@@ -91,7 +91,10 @@ namespace FYP.Services
                     throw new AppException("Unknown error encountered on server. Message:'{0}' when writing an object", ex.Message);
                 }
             }
-            return null;
+            else
+            {
+                throw new AppException("Image file must not exceed 20 MB!");
+            }
         }
 
         public async Task<List<string>> CopyImagesAsync(List<string> imgKeys)
@@ -165,7 +168,6 @@ namespace FYP.Services
                             BucketName = productBucket,
                             InputStream = outputStream,
                             StorageClass = S3StorageClass.Standard,
-                            //PartSize = 10485760, // 10mb
                             Key = file.ImageKey,
                             CannedACL = S3CannedACL.PublicRead
                         };
