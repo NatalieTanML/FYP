@@ -265,40 +265,46 @@ namespace FYP.Services
 
             try
             {
-                order.UpdatedAt = DateTime.Now;
-                order.UpdatedById = updatedBy;
-
-                // if order has an existing address
-                if (order.AddressId != null)
+                // check if there is any address input
+                if (!string.IsNullOrWhiteSpace(inOrder.Address.AddressLine1))
                 {
-                    order.Address.AddressLine1 = inOrder.Address.AddressLine1;
-                    order.Address.AddressLine2 = inOrder.Address.AddressLine2;
-                    order.Address.UnitNo = inOrder.Address.UnitNo;
-                    order.Address.PostalCode = inOrder.Address.PostalCode;
-                }
-                else
-                {
-                    // if input has an address input
-                    if (!string.IsNullOrWhiteSpace(inOrder.Address.AddressLine1))
+                    // check the order's current address type
+                    if (order.AddressId != null) // has either hotel or residential address
+                    {
+                        order.Address.AddressLine1 = inOrder.Address.AddressLine1;
+                        order.Address.AddressLine2 = inOrder.Address.AddressLine2;
+                        order.Address.UnitNo = inOrder.Address.UnitNo;
+                        order.Address.PostalCode = inOrder.Address.PostalCode;
+                        order.Address.Country = inOrder.Address.Country;
+                        order.Address.State = inOrder.Address.State;
+                    }
+                    else // is pickup, no address. add a new address to the order
                     {
                         order.Address = new Address
                         {
                             AddressLine1 = inOrder.Address.AddressLine1,
                             AddressLine2 = inOrder.Address.AddressLine2,
                             UnitNo = inOrder.Address.UnitNo,
-                            PostalCode = inOrder.Address.PostalCode
+                            PostalCode = inOrder.Address.PostalCode,
+                            Country = inOrder.Address.Country,
+                            State = inOrder.Address.State
                         };
                     }
+                    // add the hotel id if its a hotel address
+                    if (inOrder.Address.HotelId != null)
+                    {
+                        order.Address.HotelId = inOrder.Address.HotelId;
+                    }
                 }
-                // if input is a hotel address (only can send to existing hotels)
-                if (inOrder.Address.HotelId.HasValue)
+                else // no address input, that means changed to pickup
                 {
-                    order.Address.HotelId = inOrder.Address.HotelId;
+                    order.Address = null;
                 }
 
+                order.UpdatedAt = DateTime.Now;
+                order.UpdatedById = updatedBy;
                 order.DeliveryTypeId = inOrder.DeliveryTypeId;
                 order.Request = inOrder.Request;
-                order.Email = EncryptString(inOrder.EmailString, encryptionKey);
 
                 _context.Orders.Update(order);
                 await _context.SaveChangesAsync();
