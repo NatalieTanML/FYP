@@ -13,8 +13,7 @@ namespace FYP.Models
         public DateTime? EffectiveEndDate { get; set; }
         public decimal DiscountValue { get; set; }
         public bool IsPercentage { get; set; }
-       
-
+        
         public int ProductId { get; set; }
         public Product Product { get; set; }
     }

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +19,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 
 namespace FYP
@@ -40,20 +43,30 @@ namespace FYP
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
+            services.Configure<RequestLocalizationOptions>(options =>
+            {
+                options.DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture("en-SG");
+                options.SupportedCultures = new List<CultureInfo> { new CultureInfo("en-GB"), new CultureInfo("en-SG"), new CultureInfo("en-US") };
+                options.RequestCultureProviders.Clear();
+            });
+
             services.AddCors(options => options.AddPolicy("CorsPolicy", builder =>
             {
                 builder
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials()
+                    //.WithOrigins("https://memoriesadmin.tk", "https://www.memoriesadmin.tk", "https://memoriesecommerce.tk", "https://www.memoriesecommerce.tk");
                     .AllowAnyOrigin(); // update to only allow from admin & customer sites in production
             }));
+
             services.AddMvc()
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
                 .AddJsonOptions(
                     options => options.SerializerSettings.ReferenceLoopHandling =
                     Newtonsoft.Json.ReferenceLoopHandling.Ignore
                 );
+
             services.AddDbContextPool<ApplicationDbContext>(
                 options => options.UseSqlServer(Environment.GetEnvironmentVariable("ConnectionStrings:DefaultConnection"))
             );
@@ -112,8 +125,15 @@ namespace FYP
                 app.UseHsts();
             }
 
+            app.UseRequestLocalization();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(
+                    Path.Combine(Directory.GetCurrentDirectory(), "EmailTemplate")),
+                RequestPath = "/EmailTemplate"
+            });
             app.UseCookiePolicy();
             app.UseCors("CorsPolicy");
             app.UseAuthentication();

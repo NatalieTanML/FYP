@@ -418,7 +418,7 @@
                                   <table border="0" cellspacing="0" cellpadding="0">
                                     <tr>
                                       <td>
-                                        <a href="http://localhost:8080/#/trackOrder" class="button button--green" target="_blank">Track Your Order</a>
+                                        <a href="https://memoriesecommerce.tk/trackOrder" class="button button--green" target="_blank">Track Your Order</a>
                                       </td>
                                     </tr>
                                   </table>
@@ -492,7 +492,7 @@
                                   <table border="0" cellspacing="0" cellpadding="0">
                                     <tr>
                                       <td>
-                                        <a  href="http://localhost:8080/#/contactUs" class="button button--blue" target="_blank">Contact Us</a>
+                                        <a  href="https://memoriesecommerce.tk/contactUs" class="button button--blue" target="_blank">Contact Us</a>
                                       </td>
                                     </tr>
                                   </table>

@@ -1,6 +1,8 @@
 ﻿using FYP.Data;
 using FYP.Helpers;
 using FYP.Models;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -240,7 +242,8 @@ namespace FYP.Services
                 message.From.Add(new MailboxAddress("Memories @ Your Fingertips", emailAccount));
                 message.To.Add(new MailboxAddress(email, email));
                 message.Subject = "Your order receipt for 'Memories @ Your Fingertips'";
-                string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"EmailTemplate\receiptTemplate.txt");
+                string path = Path.Combine(Directory.GetCurrentDirectory(), "EmailTemplate", "receiptTemplate.txt");
+                //string path = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), @"EmailTemplate\receiptTemplate.txt");
                 string text = File.ReadAllText(path);
                 text = text.Replace("{{OrderRef}}", newOrder.ReferenceNo);
                 text = text.Replace("{{receipt_id}}", newOrder.ReferenceNo);
