@@ -184,7 +184,6 @@ namespace FYP.APIs
                 return Ok(new
                 {
                     newUserWithId.UserId,
-                    signUpStatus = true,
                     message = "User registered successfully"
                 });
             }

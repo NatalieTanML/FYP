@@ -398,7 +398,7 @@ namespace FYP.APIs
                 var updatedOrders = await _orderService.UpdateStatuses(orderIds, updatedById, isSuccessful);
                 return Ok(new
                 {
-                    message = "Updated orders statuses successfully!",
+                    message = "Updated orders' statuses successfully!",
                     orders = updatedOrders
                 });
             }
@@ -417,7 +417,7 @@ namespace FYP.APIs
             try
             {
                 await _orderService.AssignDeliveryman(orderIds, deliveryManId, updatedById);
-                return Ok(new { message = "Updated order(s) deliveryman successfully!" });
+                return Ok(new { message = "Updated orders' delivery man successfully!" });
             }
             catch (Exception ex)
             {
@@ -438,7 +438,7 @@ namespace FYP.APIs
                 var updatedOrders = await _orderService.UpdateRecipient(orderIds, recipient, updatedById);
                 return Ok(new
                 {
-                    message = "Updated orders statuses successfully!",
+                    message = "Updated orders' recipient successfully!",
                     orders = updatedOrders
                 });
             }
