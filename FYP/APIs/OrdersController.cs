@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 
 namespace FYP.APIs
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class OrdersController : Controller
@@ -305,7 +306,6 @@ namespace FYP.APIs
                 await _emailService.SendReceipt(newOrder);
                 return Ok(new
                 {
-                    createSuccess = true,
                     message = "Order created successfully!",
                     order = newOrder
                 });
@@ -338,6 +338,7 @@ namespace FYP.APIs
 
         // generates a random unique guid for the cart
         [HttpPost("guid")]
+        [AllowAnonymous]
         public IActionResult GenerateGUID()
         {
             return Ok(new { guid = Guid.NewGuid().ToString("N").ToUpper() });

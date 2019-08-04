@@ -1,6 +1,7 @@
 ﻿using FYP.Helpers;
 using FYP.Models;
 using FYP.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -12,6 +13,7 @@ using System.Threading.Tasks;
 
 namespace FYP.APIs
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class EmailController : ControllerBase

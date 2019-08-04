@@ -184,7 +184,7 @@ namespace FYP.APIs
                 return Ok(new
                 {
                     newUserWithId.UserId,
-                    message = "User registered successfully"
+                    message = "User registered successfully!"
                 });
             }
             catch (Exception ex)
