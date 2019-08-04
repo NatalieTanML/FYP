@@ -296,6 +296,7 @@ namespace FYP.APIs
 
         // creates a new order
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> CreateOrder([FromBody]Order inOrder)
         {
             try

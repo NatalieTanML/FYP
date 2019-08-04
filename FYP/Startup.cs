@@ -56,8 +56,8 @@ namespace FYP
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials()
-                    //.WithOrigins("https://memoriesadmin.tk", "https://www.memoriesadmin.tk", "https://memoriesecommerce.tk", "https://www.memoriesecommerce.tk");
-                    .AllowAnyOrigin(); // update to only allow from admin & customer sites in production
+                    .WithOrigins("https://memoriesadmin.tk", "https://www.memoriesadmin.tk", "https://memoriesecommerce.tk", "https://www.memoriesecommerce.tk");
+                    //.AllowAnyOrigin(); // update to only allow from admin & customer sites in production
             }));
 
             services.AddMvc()
