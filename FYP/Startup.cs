@@ -36,20 +36,21 @@ namespace FYP
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.Configure<RequestLocalizationOptions>(options =>
+            {
+                options.SupportedCultures = new List<CultureInfo> { new CultureInfo("en-SG") };
+                options.SupportedUICultures = new List<CultureInfo> { new CultureInfo("en-SG") };
+                options.DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture("en-SG");
+                options.RequestCultureProviders.Clear();
+            });
+
             services.Configure<CookiePolicyOptions>(options =>
             {
                 // This lambda determines whether user consent for non-essential cookies is needed for a given request.
                 options.CheckConsentNeeded = context => true;
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
-
-            services.Configure<RequestLocalizationOptions>(options =>
-            {
-                options.DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture("en-SG");
-                options.SupportedCultures = new List<CultureInfo> { new CultureInfo("en-GB"), new CultureInfo("en-SG"), new CultureInfo("en-US") };
-                options.RequestCultureProviders.Clear();
-            });
-
+            
             services.AddCors(options => options.AddPolicy("CorsPolicy", builder =>
             {
                 builder
@@ -115,6 +116,12 @@ namespace FYP
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
+            app.UseRequestLocalization(new RequestLocalizationOptions
+            {
+                DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture("en-SG"),
+                SupportedCultures = new List<CultureInfo> { new CultureInfo("en-SG") },
+                SupportedUICultures = new List<CultureInfo> { new CultureInfo("en-SG") }
+            });
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -124,8 +131,6 @@ namespace FYP
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
             }
-
-            app.UseRequestLocalization();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseStaticFiles(new StaticFileOptions

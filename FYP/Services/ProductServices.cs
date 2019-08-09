@@ -182,6 +182,9 @@ namespace FYP.Services
             }
             catch (Exception ex)
             {
+                Console.WriteLine("Error in creating product: " + ex.Message);
+                Console.WriteLine("Error in creating product: " + ex.InnerException);
+                Console.WriteLine("Error in creating product: " + ex.StackTrace);
                 throw new AppException("Unable to create product record.", new { message = ex.Message });
             }
         }
@@ -405,6 +408,9 @@ namespace FYP.Services
             }
             catch (Exception ex)
             {
+                Console.WriteLine("Error in updating product: " + ex.Message);
+                Console.WriteLine("Error in updating product: " + ex.InnerException);
+                Console.WriteLine("Error in updating product: " + ex.StackTrace);
                 throw new AppException("Unable to update product record.", new { message = ex.Message });
             }
         }
