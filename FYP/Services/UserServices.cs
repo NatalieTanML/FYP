@@ -50,6 +50,7 @@ namespace FYP.Services
             return await _context.Users
                 .Include(user => user.Role)
                 .Where(user => user.RoleId == 2)
+                .Where(user => user.IsEnabled == true)
                 .ToListAsync();
         }
 
