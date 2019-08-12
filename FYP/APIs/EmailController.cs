@@ -46,6 +46,7 @@ namespace FYP.APIs
             }
         }
 
+        [AllowAnonymous]
         [HttpPost("message")]
         public async Task<IActionResult> CreateMessage([FromBody]Enquiries enquiries)
         {
